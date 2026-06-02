@@ -111,14 +111,14 @@ export default function JobDetailPage() {
 
   if (jobLoading) {
     return (
-      <div className="flex items-center justify-center py-24 gap-2 text-[var(--muted-foreground)]">
+      <div className="flex items-center justify-center py-24 gap-2 text-(--muted-foreground)">
         <span className="mh-spinner" />
         <span className="text-sm">Loading job…</span>
       </div>
     );
   }
 
-  if (!job) return <p className="text-sm text-[var(--muted-foreground)]">Job not found.</p>;
+  if (!job) return <p className="text-sm text-(--muted-foreground)">Job not found.</p>;
 
   const mustHave = job.requirements?.filter((r) => r.kind === "must_have") ?? [];
   const niceToHave = job.requirements?.filter((r) => r.kind === "nice_to_have") ?? [];
@@ -444,7 +444,7 @@ export default function JobDetailPage() {
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-[var(--subtle-foreground)]">–</span>
+                            <span className="text-xs text-(--subtle-foreground)">–</span>
                           )}
                         </td>
                         {CATEGORIES.map((category) => (
@@ -452,7 +452,7 @@ export default function JobDetailPage() {
                             {isDone && entry.category_scores?.[category] ? (
                               <ScorePill score={entry.category_scores[category].score} />
                             ) : (
-                              <span className="text-xs text-[var(--subtle-foreground)]">–</span>
+                              <span className="text-xs text-(--subtle-foreground)">–</span>
                             )}
                           </td>
                         ))}
@@ -500,7 +500,7 @@ export default function JobDetailPage() {
 
           {!lbLoading && leaderboardTotal > 0 && (
             <div className="mh-row justify-between px-1 pt-1">
-              <span className="text-xs text-[var(--muted-foreground)]">
+              <span className="text-xs text-(--muted-foreground)">
                 Showing {pageStart}-{pageEnd} of {leaderboardTotal}
               </span>
               <div className="mh-row">
@@ -543,8 +543,8 @@ export default function JobDetailPage() {
         size="lg"
       >
         <div className="flex flex-col gap-3">
-          <h3 className="text-base font-semibold text-[var(--foreground)]">{job.title}</h3>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--muted-foreground)]">
+          <h3 className="text-base font-semibold text-(--foreground)">{job.title}</h3>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-(--muted-foreground)">
             {job.description}
           </p>
         </div>
@@ -552,9 +552,9 @@ export default function JobDetailPage() {
 
       <Dialog open={!!candidateToDelete} onClose={handleCancelDelete} title="Delete CV" size="sm">
         <div className="flex flex-col gap-4">
-          <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">
+          <p className="text-sm leading-relaxed text-(--muted-foreground)">
             Delete{" "}
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               {candidateToDelete?.name}
             </span>{" "}
             from this job? This will remove the CV and its evaluation from the leaderboard.
