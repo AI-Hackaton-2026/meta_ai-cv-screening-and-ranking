@@ -463,7 +463,9 @@ export default function JobDetailPage() {
                           {isDone && entry.overall_score != null ? (
                             <div className="mh-score-cell">
                               <span className="mh-score-number mono">{entry.overall_score.toFixed(1)}</span>
-                              <ScoreBar score={entry.overall_score} height={5} showLabel={false} />
+                              <div className="mh-scorebar-cell">
+                                <ScoreBar score={entry.overall_score} height={5} showLabel={false} />
+                              </div>
                             </div>
                           ) : (
                             <span className="text-xs text-[var(--subtle-foreground)]">–</span>
@@ -584,7 +586,7 @@ function initials(name = "") {
 }
 
 function avatarColor(name = "") {
-  const colors = ["#b8a2f2", "#8577ff", "#3653dc", "#0f8a4b", "#6b69ff"];
+  const colors = ["#b8a2f2", "#8577ff", "#6b69ff", "#a392ff", "#3653dc"];
   const sum = [...name].reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[sum % colors.length];
 }
