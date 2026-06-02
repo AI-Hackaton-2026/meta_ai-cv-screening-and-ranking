@@ -30,10 +30,10 @@ import { formatScore, recommendationLabel } from "@/lib/utils";
 
 const CAT_ORDER = ["skills", "experience", "education", "domain_fit"];
 const CAT_META = {
-  skills: { label: "Skills", short: "Skills" },
-  experience: { label: "Experience", short: "Exp." },
-  education: { label: "Education", short: "Edu." },
-  domain_fit: { label: "Domain Fit", short: "Domain" },
+  skills: { label: "Skills", radarLabel: "Skills" },
+  experience: { label: "Experience", radarLabel: "Experience" },
+  education: { label: "Education", radarLabel: "Education" },
+  domain_fit: { label: "Domain Fit", radarLabel: "Domain Fit" },
 };
 
 const REQ_META = {
@@ -331,7 +331,7 @@ function CategoryRow({ cat, data, index }) {
   );
 }
 
-function Radar({ scores, size = 260 }) {
+function Radar({ scores, size = 330 }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -357,7 +357,7 @@ function Radar({ scores, size = 260 }) {
 
   const cx = size / 2;
   const cy = size / 2;
-  const radius = size / 2 - 48;
+  const radius = size / 2 - 78;
   const axes = CAT_ORDER.map((key, index) => {
     const angle = -Math.PI / 2 + (index * 2 * Math.PI) / CAT_ORDER.length;
     return { key, angle, x: Math.cos(angle), y: Math.sin(angle) };
@@ -377,7 +377,7 @@ function Radar({ scores, size = 260 }) {
     <svg
       width={size}
       height={size}
-      viewBox={`-28 -14 ${size + 56} ${size + 28}`}
+      viewBox={`-132 -52 ${size + 264} ${size + 104}`}
       aria-hidden="true"
       className="mh-radar-svg"
     >
@@ -433,19 +433,21 @@ function Radar({ scores, size = 260 }) {
         );
       })}
       {axes.map((axis) => {
-        const [x, y] = point(1.24, axis);
+        const [x, y] = point(1.36, axis);
+        const textAnchor =
+          axis.key === "domain_fit" ? "end" : axis.key === "experience" ? "start" : "middle";
         return (
           <text
             key={axis.key}
             x={x}
             y={y}
-            textAnchor="middle"
+            textAnchor={textAnchor}
             dominantBaseline="middle"
-            fontSize="11"
+            fontSize="12"
             fontWeight="600"
             fill="var(--muted-foreground)"
           >
-            {CAT_META[axis.key].short}
+            {CAT_META[axis.key].radarLabel}
           </text>
         );
       })}
