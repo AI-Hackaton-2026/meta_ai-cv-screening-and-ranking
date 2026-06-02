@@ -43,7 +43,6 @@ export function AppShell({ children }) {
             Jobs
           </NavLink>
         </nav>
-        <div className="mh-avatar" title="Recruiter workspace">JR</div>
       </header>
 
       <main className={cn("mh-main flex-1 w-full", isWidePage && "mh-main-wide")}>

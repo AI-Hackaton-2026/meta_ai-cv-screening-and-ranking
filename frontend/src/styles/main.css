@@ -1025,11 +1025,16 @@ body {
   min-width: 0;
 }
 
+.mh-scorebar-cell {
+  flex: 1;
+  min-width: 72px;
+}
+
 .mh-score-number {
   min-width: 42px;
   font-size: 14px;
   font-weight: 750;
-  color: var(--success-strong);
+  color: var(--primary);
 }
 
 .mh-error-line {
@@ -1110,6 +1115,7 @@ body {
   flex-direction: column;
   height: 100%;
   padding: 22px;
+  overflow: visible;
 }
 
 .mh-radar-wrap {
@@ -1117,15 +1123,18 @@ body {
   flex: 1;
   align-items: center;
   justify-content: center;
-  margin-top: 14px;
+  width: calc(100% + 96px);
+  margin: 0 -48px -6px;
   min-height: 0;
   overflow: visible;
 }
 
 .mh-radar-svg {
   display: block;
-  max-width: 100%;
-  height: auto;
+  width: 470px;
+  max-width: none;
+  height: 270px;
+  margin: 0 auto;
   overflow: visible;
 }
 
@@ -1302,6 +1311,18 @@ body {
 
 .mh-req-list {
   margin-top: 16px;
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.mh-req-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mh-req-list::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: rgba(107, 105, 255, 0.28);
 }
 
 .mh-reqcard {
@@ -1426,6 +1447,16 @@ body {
   .mh-cand-grid,
   .mh-sg-grid {
     grid-template-columns: 1fr;
+  }
+
+  .mh-radar-wrap {
+    width: 100%;
+    margin: 10px 0 0;
+  }
+
+  .mh-radar-svg {
+    width: min(100%, 470px);
+    height: auto;
   }
 }
 

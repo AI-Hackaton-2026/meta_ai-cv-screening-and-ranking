@@ -25,16 +25,16 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ScoreBar } from "@/components/ScoreBar";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useCandidate, useJob, useRescore } from "@/lib/queries";
+import { useCandidate, useJob, useRescoreForJob } from "@/lib/queries";
 import { candidatesApi } from "@/lib/api";
 import { formatScore, recommendationLabel } from "@/lib/utils";
 
 const CAT_ORDER = ["skills", "experience", "education", "domain_fit"];
 const CAT_META = {
-  skills: { label: "Skills", short: "Skills" },
-  experience: { label: "Experience", short: "Exp." },
-  education: { label: "Education", short: "Edu." },
-  domain_fit: { label: "Domain Fit", short: "Domain" },
+  skills: { label: "Skills", radarLabel: "Skills" },
+  experience: { label: "Experience", radarLabel: "Experience" },
+  education: { label: "Education", radarLabel: "Education" },
+  domain_fit: { label: "Domain Fit", radarLabel: "Domain Fit" },
 };
 
 const REQ_META = {
@@ -64,7 +64,7 @@ export default function CandidatePage() {
   const navigate = useNavigate();
   const { data: candidate, isLoading } = useCandidate(candidateId);
   const { data: job } = useJob(candidate?.job_id);
-  const { mutateAsync: rescore, isPending: rescoring } = useRescore(candidateId);
+  const { mutateAsync: rescore, isPending: rescoring } = useRescoreForJob(candidate?.job_id);
   const [showCvPreview, setShowCvPreview] = useState(false);
 
   const evaluation = candidate?.evaluation;
@@ -85,9 +85,12 @@ export default function CandidatePage() {
   };
 
   const handleRescore = async () => {
+    if (!candidate?.job_id) return;
+
     try {
-      await rescore();
+      await rescore(candidateId);
       toast.success("Rescore queued. Results will update shortly.");
+      navigate(`/jobs/${candidate.job_id}`, { replace: true });
     } catch {
       toast.error("Rescore failed.");
     }
@@ -354,7 +357,7 @@ function CategoryRow({ cat, data, index }) {
   );
 }
 
-function Radar({ scores, size = 260 }) {
+function Radar({ scores, size = 330 }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -380,7 +383,7 @@ function Radar({ scores, size = 260 }) {
 
   const cx = size / 2;
   const cy = size / 2;
-  const radius = size / 2 - 48;
+  const radius = size / 2 - 78;
   const axes = CAT_ORDER.map((key, index) => {
     const angle = -Math.PI / 2 + (index * 2 * Math.PI) / CAT_ORDER.length;
     return { key, angle, x: Math.cos(angle), y: Math.sin(angle) };
@@ -400,7 +403,7 @@ function Radar({ scores, size = 260 }) {
     <svg
       width={size}
       height={size}
-      viewBox={`-28 -14 ${size + 56} ${size + 28}`}
+      viewBox={`-132 -52 ${size + 264} ${size + 104}`}
       aria-hidden="true"
       className="mh-radar-svg"
     >
@@ -456,19 +459,21 @@ function Radar({ scores, size = 260 }) {
         );
       })}
       {axes.map((axis) => {
-        const [x, y] = point(1.24, axis);
+        const [x, y] = point(1.36, axis);
+        const textAnchor =
+          axis.key === "domain_fit" ? "end" : axis.key === "experience" ? "start" : "middle";
         return (
           <text
             key={axis.key}
             x={x}
             y={y}
-            textAnchor="middle"
+            textAnchor={textAnchor}
             dominantBaseline="middle"
-            fontSize="11"
+            fontSize="12"
             fontWeight="600"
             fill="var(--muted-foreground)"
           >
-            {CAT_META[axis.key].short}
+            {CAT_META[axis.key].radarLabel}
           </text>
         );
       })}
