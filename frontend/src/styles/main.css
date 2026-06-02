@@ -1,0 +1,92 @@
+@import "./tokens.css";
+@import "tailwindcss";
+
+/* ── Tailwind v4 theme — wired to Symphony brand tokens ─────────────────── */
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-accent-sky: var(--color-accent-sky);
+  --color-accent-magenta: var(--color-accent-magenta);
+  --color-ink: var(--color-ink);
+  --color-canvas: var(--color-canvas);
+  --color-card: var(--color-card);
+  --color-border: var(--color-border);
+
+  --font-family-sans: var(--font-sans);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+/* ── Base reset / global styles ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Utility classes (used app-wide, not Tailwind-replaceable inline) ───── */
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Score bar fill animation */
+.score-bar-fill {
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Recommendation badge colours */
+.badge-advance {
+  background: var(--color-advance-bg);
+  color: var(--color-advance-text);
+}
+.badge-hold {
+  background: var(--color-hold-bg);
+  color: var(--color-hold-text);
+}
+.badge-reject {
+  background: var(--color-reject-bg);
+  color: var(--color-reject-text);
+}
+
+/* Requirement match status dots */
+.req-met {
+  color: #059669;
+}
+.req-partial {
+  color: #d97706;
+}
+.req-unmet {
+  color: #dc2626;
+}
+
+/* Focus ring using brand primary */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
