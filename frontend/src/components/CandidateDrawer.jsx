@@ -101,18 +101,19 @@ export function CandidateDrawer({ candidateId, requirements = [], onClose }) {
           {ev && (
             <>
               {/* Score + Recommendation */}
-              <div className="flex items-center gap-4 p-4 rounded-[var(--radius-lg)] bg-[var(--color-primary-light)]">
+              <div className="flex items-center gap-6 p-5 rounded-[var(--radius-lg)] bg-[var(--primary-light)] border border-[rgba(107,105,255,0.22)]">
                 <div>
-                  <p className="text-xs text-[var(--color-ink-muted)] mb-0.5">Overall Score</p>
+                  <p className="text-xs text-[var(--muted-foreground)] mb-0.5">Overall Score</p>
                   <p
-                    className="text-3xl font-bold tabular-nums"
-                    style={{ color: "var(--color-primary)" }}
+                    className="text-4xl font-bold mono"
+                    style={{ color: "var(--primary)" }}
                   >
                     {formatScore(ev.overall_score)}
                   </p>
                 </div>
+                <div className="h-14 w-px bg-[rgba(107,105,255,0.22)]" />
                 <div className="flex-1">
-                  <p className="text-xs text-[var(--color-ink-muted)] mb-1">Recommendation</p>
+                  <p className="text-xs text-[var(--muted-foreground)] mb-1">Recommendation</p>
                   <Badge variant={ev.recommendation} className="text-sm px-3 py-1">
                     {recommendationLabel(ev.recommendation)}
                   </Badge>
@@ -121,17 +122,17 @@ export function CandidateDrawer({ candidateId, requirements = [], onClose }) {
 
               {/* Recruiter Summary */}
               <div>
-                <h4 className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-2">
+                <h4 className="mh-sec-title mb-2">
                   Recruiter Summary
                 </h4>
-                <p className="text-sm text-[var(--color-ink)] leading-relaxed">{ev.summary}</p>
+                <p className="text-sm text-[var(--secondary-foreground)] leading-relaxed">{ev.summary}</p>
               </div>
 
               {/* Radar + Category Scores */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Radar */}
                 <div>
-                  <h4 className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-2">
+                  <h4 className="mh-sec-title mb-2">
                     Category Overview
                   </h4>
                   <ResponsiveContainer width="100%" height={200}>
@@ -160,7 +161,7 @@ export function CandidateDrawer({ candidateId, requirements = [], onClose }) {
 
                 {/* Category detail */}
                 <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide">
+                  <h4 className="mh-sec-title">
                     Category Scores
                   </h4>
                   {Object.entries(ev.category_scores).map(([key, val]) => (

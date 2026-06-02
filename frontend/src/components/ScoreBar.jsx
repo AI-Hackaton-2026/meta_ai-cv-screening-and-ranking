@@ -6,21 +6,21 @@ import { scoreColor, formatScore } from "@/lib/utils";
  */
 export function ScoreBar({ score, showLabel = true, height = 6 }) {
   const pct = Math.min(Math.max(score ?? 0, 0), 100);
-  const color = scoreColor(score);
+  const color = "var(--primary)";
 
   return (
     <div className="flex items-center gap-2">
       <div
-        className="flex-1 rounded-full overflow-hidden"
-        style={{ height, background: "var(--color-border)" }}
+        className="mh-track"
+        style={{ height }}
       >
         <div
-          className="score-bar-fill h-full rounded-full"
+          className="mh-fill"
           style={{ width: `${pct}%`, background: color }}
         />
       </div>
       {showLabel && (
-        <span className="text-xs font-medium tabular-nums" style={{ color, minWidth: "2.5rem" }}>
+        <span className="text-xs font-semibold mono" style={{ color, minWidth: "2.5rem", textAlign: "right" }}>
           {formatScore(score)}
         </span>
       )}
@@ -33,7 +33,7 @@ export function ScorePill({ score }) {
   const color = scoreColor(score);
   return (
     <span
-      className="inline-flex items-center justify-center w-10 h-5 rounded-full text-[10px] font-semibold tabular-nums text-white"
+      className="mh-scorepill mono"
       style={{ background: color }}
     >
       {formatScore(score)}

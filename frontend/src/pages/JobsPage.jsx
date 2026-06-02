@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Briefcase, Users, Loader2, FlaskConical, ChevronRight } from "lucide-react";
+import {
+  Plus,
+  Briefcase,
+  Users,
+  FlaskConical,
+  ChevronRight,
+  Search,
+  FileSearch,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,14 +19,18 @@ import { useJobs, useSeed } from "@/lib/queries";
 const EXTRACTION_STATUS_BADGE = {
   pending: { label: "Setting up", variant: "muted" },
   extracting: { label: "Extracting requirements…", variant: "processing" },
-  done: { label: "Ready", variant: "default" },
+  done: { label: "Ready", variant: "muted" },
   error: { label: "Error", variant: "muted" },
 };
 
 export default function JobsPage() {
   const [showCreate, setShowCreate] = useState(false);
+  const [query, setQuery] = useState("");
   const { data: jobs, isLoading } = useJobs();
   const { mutateAsync: seed, isPending: seeding } = useSeed();
+
+  const filteredJobs =
+    jobs?.filter((job) => job.title.toLowerCase().includes(query.trim().toLowerCase())) ?? [];
 
   const handleSeed = async () => {
     try {
@@ -30,36 +42,51 @@ export default function JobsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
+    <div className="mh-page">
+      <div className="mh-pagehead">
         <div>
-          <h1 className="text-xl font-semibold text-[var(--color-ink)]">Job Openings</h1>
-          <p className="text-sm text-[var(--color-ink-muted)] mt-0.5">
+          <h1 className="mh-page-title">Job openings</h1>
+          <p className="mh-page-sub">
             Create a job, upload CVs, and let AI rank your candidates.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleSeed} loading={seeding}>
-            <FlaskConical size={14} /> Load Sample Data
+        <div className="mh-row">
+          <Button variant="outline" size="md" onClick={handleSeed} loading={seeding}>
+            <FlaskConical size={15} /> Load sample data
           </Button>
           <Button onClick={() => setShowCreate(true)}>
-            <Plus size={16} /> New Job
+            <Plus size={16} /> New job
           </Button>
         </div>
       </div>
 
-      {/* Job grid */}
+      <div className="mh-search-wrap">
+        <div className="mh-search">
+          <Search size={16} className="mh-input-icon" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search jobs by title..."
+            aria-label="Search jobs"
+          />
+        </div>
+      </div>
+
       {isLoading ? (
-        <div className="flex items-center gap-2 text-[var(--color-ink-muted)] py-12 justify-center">
-          <Loader2 size={18} className="animate-spin" />
+        <div className="flex items-center gap-2 text-[var(--muted-foreground)] py-12 justify-center">
+          <span className="mh-spinner" />
           <span className="text-sm">Loading jobs…</span>
         </div>
-      ) : jobs?.length === 0 ? (
-        <EmptyState onNew={() => setShowCreate(true)} onSeed={handleSeed} seeding={seeding} />
+      ) : jobs?.length === 0 || filteredJobs.length === 0 ? (
+        <EmptyState
+          query={query}
+          onNew={() => setShowCreate(true)}
+          onSeed={handleSeed}
+          seeding={seeding}
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs?.map((job) => (
+        <div className="mh-jobgrid">
+          {filteredJobs.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
         </div>
@@ -75,34 +102,28 @@ function JobCard({ job }) {
 
   return (
     <Link to={`/jobs/${job.id}`} className="block group">
-      <Card clickable className="h-full flex flex-col gap-3">
-        {/* Title + status */}
+      <Card clickable className="mh-job-card">
         <div className="flex items-start justify-between gap-2">
-          <div
-            className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-md)] shrink-0"
-            style={{ background: "var(--color-primary-light)" }}
-          >
-            <Briefcase size={16} style={{ color: "var(--color-primary)" }} />
+          <div className="mh-job-icon">
+            <Briefcase size={17} />
           </div>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          <Badge variant={status.variant}>
+            {job.extraction_status === "extracting" && (
+              <span className="mh-spinner mh-spinner-xs" />
+            )}
+            {status.label}
+          </Badge>
         </div>
 
-        <div className="flex-1">
-          <h2 className="text-sm font-semibold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-2">
-            {job.title}
-          </h2>
-        </div>
+        <h2 className="mh-job-title group-hover:text-[var(--primary)]">{job.title}</h2>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border)]">
-          <div className="flex items-center gap-1 text-xs text-[var(--color-ink-muted)]">
-            <Users size={12} />
-            <span>
-              {job.candidate_count} candidate{job.candidate_count !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <span className="text-xs text-[var(--color-primary)] font-medium flex items-center gap-0.5">
-            Open <ChevronRight size={12} />
+        <div className="mh-job-foot">
+          <span className="mh-meta">
+            <Users size={13} />
+            {job.candidate_count} candidate{job.candidate_count !== 1 ? "s" : ""}
+          </span>
+          <span className="mh-open-link">
+            Open <ChevronRight size={14} />
           </span>
         </div>
       </Card>
@@ -110,29 +131,34 @@ function JobCard({ job }) {
   );
 }
 
-function EmptyState({ onNew, onSeed, seeding }) {
+function EmptyState({ query, onNew, onSeed, seeding }) {
+  const hasQuery = query.trim().length > 0;
+
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-      <div
-        className="flex items-center justify-center w-16 h-16 rounded-[var(--radius-xl)]"
-        style={{ background: "var(--color-primary-light)" }}
-      >
-        <Briefcase size={28} style={{ color: "var(--color-primary)" }} />
+    <div className="mh-empty">
+      <div className="mh-empty-icon">
+        {hasQuery ? <FileSearch size={26} /> : <Briefcase size={28} />}
       </div>
       <div>
-        <p className="text-base font-semibold text-[var(--color-ink)]">No jobs yet</p>
-        <p className="text-sm text-[var(--color-ink-muted)] mt-1">
-          Create your first job opening or load sample data to explore.
+        <p className="text-[15px] font-semibold text-[var(--foreground)]">
+          {hasQuery ? `No jobs match "${query}"` : "No jobs yet"}
+        </p>
+        <p className="mh-page-sub">
+          {hasQuery
+            ? "Try a different search, or create a new job opening."
+            : "Create your first job opening or load sample data to explore."}
         </p>
       </div>
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={onSeed} loading={seeding}>
-          <FlaskConical size={14} /> Load Sample Data
-        </Button>
-        <Button onClick={onNew}>
-          <Plus size={14} /> Create Job
-        </Button>
-      </div>
+      {!hasQuery && (
+        <div className="mh-row">
+          <Button variant="outline" onClick={onSeed} loading={seeding}>
+            <FlaskConical size={14} /> Load sample data
+          </Button>
+          <Button onClick={onNew}>
+            <Plus size={14} /> New job
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
