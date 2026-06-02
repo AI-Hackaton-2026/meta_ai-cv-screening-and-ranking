@@ -81,6 +81,19 @@ async def get_candidate(
     )
 
 
+@router.delete("/{candidate_id}", status_code=204)
+async def delete_candidate(
+    candidate_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    candidate = await session.get(Candidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    await session.delete(candidate)
+    await session.commit()
+
+
 @router.post("/{candidate_id}/rescore", status_code=202)
 async def rescore_candidate(
     candidate_id: int,

@@ -9,10 +9,13 @@ import {
   SlidersHorizontal,
   Loader2,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Dialog } from "@/components/ui/Dialog";
 import { ScoreBar, ScorePill } from "@/components/ScoreBar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BatchProgress } from "@/components/BatchProgress";
@@ -20,7 +23,13 @@ import { UploadZone } from "@/components/UploadZone";
 import { CandidateDrawer } from "@/components/CandidateDrawer";
 import { CompareView } from "@/components/CompareView";
 import { WeightsEditor } from "@/components/WeightsEditor";
-import { useJob, useLeaderboard, useBatchStatus, useRescoreForJob } from "@/lib/queries";
+import {
+  useBatchStatus,
+  useDeleteCandidateForJob,
+  useJob,
+  useLeaderboard,
+  useRescoreForJob,
+} from "@/lib/queries";
 import { jobsApi } from "@/lib/api";
 import { recommendationClass, recommendationLabel } from "@/lib/utils";
 
@@ -61,7 +70,10 @@ export default function JobDetailPage() {
   const [showUpload, setShowUpload] = useState(true);
   const [sort, setSort] = useState({ key: "overall_score", dir: "desc" });
   const [rescoringId, setRescoringId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [candidateToDelete, setCandidateToDelete] = useState(null);
   const { mutateAsync: rescoreCandidate } = useRescoreForJob(jobId);
+  const { mutateAsync: deleteCandidate } = useDeleteCandidateForJob(jobId);
 
   // Auto-collapse upload once candidates exist
   useEffect(() => {
@@ -115,6 +127,34 @@ export default function JobDetailPage() {
       await rescoreCandidate(candidateId);
     } finally {
       setRescoringId(null);
+    }
+  };
+
+  const handleDeleteClick = (event, candidate) => {
+    event.stopPropagation();
+    setCandidateToDelete(candidate);
+  };
+
+  const handleCancelDelete = () => {
+    if (!deletingId) setCandidateToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!candidateToDelete) return;
+
+    setDeletingId(candidateToDelete.id);
+    try {
+      await deleteCandidate(candidateToDelete.id);
+      setSelectedCandidate((current) =>
+        current === candidateToDelete.id ? null : current
+      );
+      setCompareIds((current) => current.filter((id) => id !== candidateToDelete.id));
+      setCandidateToDelete(null);
+      toast.success("CV deleted.");
+    } catch {
+      toast.error("Failed to delete CV.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -283,7 +323,7 @@ export default function JobDetailPage() {
                       </th>
                     ))}
                     <th className="px-3 py-3 text-left">Status</th>
-                    <th className="px-3 py-3 text-center w-8"></th>
+                    <th className="px-3 py-3 text-center w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -373,29 +413,36 @@ export default function JobDetailPage() {
                         </td>
 
                         {/* Action */}
-                        <td className="px-3 py-3 text-center">
-                          {isDone && (
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            {isError && (
+                              <button
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary-light)] disabled:opacity-50"
+                                disabled={rescoringId === entry.id}
+                                onClick={(e) => handleRetry(e, entry.id)}
+                                title={entry.error ?? "Retry scoring"}
+                                aria-label={`Retry scoring ${entry.name}`}
+                              >
+                                <RefreshCw
+                                  size={14}
+                                  className={rescoringId === entry.id ? "animate-spin" : ""}
+                                />
+                              </button>
+                            )}
                             <button
-                              className="text-xs text-[var(--color-primary)] hover:underline"
-                              onClick={(e) => { e.stopPropagation(); setSelectedCandidate(entry.id); }}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                              disabled={deletingId === entry.id}
+                              onClick={(e) => handleDeleteClick(e, entry)}
+                              title="Delete CV"
+                              aria-label={`Delete ${entry.name}`}
                             >
-                              View
+                              {deletingId === entry.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={14} />
+                              )}
                             </button>
-                          )}
-                          {isError && (
-                            <button
-                              className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline disabled:opacity-50"
-                              disabled={rescoringId === entry.id}
-                              onClick={(e) => handleRetry(e, entry.id)}
-                              title={entry.error ?? "Retry scoring"}
-                            >
-                              <RefreshCw
-                                size={12}
-                                className={rescoringId === entry.id ? "animate-spin" : ""}
-                              />
-                              Retry
-                            </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -423,6 +470,43 @@ export default function JobDetailPage() {
           onClose={() => setShowCompare(false)}
         />
       )}
+
+      <Dialog
+        open={!!candidateToDelete}
+        onClose={handleCancelDelete}
+        title="Delete CV"
+        size="sm"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            Delete{" "}
+            <span className="font-semibold text-[var(--color-ink)]">
+              {candidateToDelete?.name}
+            </span>
+            {" "}from this job? This will remove the CV and its evaluation from the
+            leaderboard.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelDelete}
+              disabled={!!deletingId}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleConfirmDelete}
+              loading={!!deletingId}
+            >
+              <Trash2 size={14} />
+              Delete CV
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
