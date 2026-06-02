@@ -103,6 +103,7 @@ class CandidateOut(BaseModel):
     id: int
     job_id: int
     name: str
+    email: str | None = None
     original_filename: str
     has_cv_preview: bool = False
     status: str

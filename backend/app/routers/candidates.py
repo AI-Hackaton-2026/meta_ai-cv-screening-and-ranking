@@ -74,6 +74,7 @@ async def get_candidate(
         id=candidate.id,
         job_id=candidate.job_id,
         name=candidate.name,
+        email=candidate.email,
         original_filename=candidate.original_filename,
         has_cv_preview=bool(candidate.storage_path),
         status=candidate.status,

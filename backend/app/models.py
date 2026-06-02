@@ -87,6 +87,7 @@ class Candidate(Base):
 
     # Extracted from CV by Claude (first pass); falls back to filename stem
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
     storage_path: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 

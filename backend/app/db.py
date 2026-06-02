@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
+from app.services.contact import extract_email
 
 engine = create_async_engine(
     settings.database_url,
@@ -34,6 +35,16 @@ async def create_tables() -> None:
             await conn.exec_driver_sql(
                 "ALTER TABLE candidates ADD COLUMN storage_path VARCHAR(1000)"
             )
+        if candidate_columns and "email" not in {row[1] for row in candidate_columns}:
+            await conn.exec_driver_sql("ALTER TABLE candidates ADD COLUMN email VARCHAR(320)")
+            rows = await conn.exec_driver_sql("SELECT id, raw_text FROM candidates")
+            for candidate_id, raw_text in rows.fetchall():
+                email = extract_email(raw_text or "")
+                if email:
+                    await conn.exec_driver_sql(
+                        "UPDATE candidates SET email = ? WHERE id = ?",
+                        (email, candidate_id),
+                    )
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
