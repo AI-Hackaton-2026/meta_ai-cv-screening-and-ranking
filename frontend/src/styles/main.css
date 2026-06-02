@@ -1205,6 +1205,20 @@ body {
   margin-bottom: 22px;
 }
 
+.mh-cv-preview-card {
+  margin-bottom: 22px;
+}
+
+.mh-cv-preview-frame {
+  width: 100%;
+  height: min(72vh, 860px);
+  min-height: 520px;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: white;
+}
+
 .mh-cat-list {
   margin-top: 16px;
 }
@@ -1474,6 +1488,10 @@ body {
 
   .mh-cat-score-wrap {
     justify-content: space-between;
+  }
+
+  .mh-cv-preview-frame {
+    min-height: 420px;
   }
 }
 

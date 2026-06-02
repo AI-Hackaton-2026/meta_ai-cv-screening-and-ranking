@@ -143,6 +143,9 @@ All in `backend/.env` (copy from `backend/.env.example`):
 | `MAX_CONCURRENCY` | | `5` | Max concurrent scoring tasks |
 | `CORS_ORIGINS` | | `http://localhost:5173` | Allowed frontend origins |
 | `DATABASE_URL` | | `sqlite+aiosqlite:///./data/metahire.db` | Database path |
+| `SUPABASE_URL` | | — | Supabase project root URL for optional CV file storage |
+| `SUPABASE_SERVICE_ROLE_KEY` | | — | Backend-only key for private CV file storage |
+| `SUPABASE_STORAGE_BUCKET` | | `cvs` | Private Storage bucket for original CV files |
 
 ---
 

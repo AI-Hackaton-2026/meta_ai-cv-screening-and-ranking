@@ -47,6 +47,7 @@ export const candidatesApi = {
   get: (id) => apiClient.get(`/candidates/${id}`).then((r) => r.data),
   rescore: (id) => apiClient.post(`/candidates/${id}/rescore`).then((r) => r.data),
   delete: (id) => apiClient.delete(`/candidates/${id}`),
+  previewCv: (id) => `${BASE_URL}/candidates/${id}/cv-preview`,
   exportPdf: (id) => `${BASE_URL}/candidates/${id}/export?format=pdf`,
 };
 
