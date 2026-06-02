@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BarChart3,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ScoreBar } from "@/components/ScoreBar";
+import { ScheduleInterviewDialog } from "@/components/ScheduleInterviewDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useCandidate, useJob, useRescoreForJob } from "@/lib/queries";
 import { candidatesApi } from "@/lib/api";
@@ -66,6 +68,7 @@ export default function CandidatePage() {
   const { data: job } = useJob(candidate?.job_id);
   const { mutateAsync: rescore, isPending: rescoring } = useRescoreForJob(candidate?.job_id);
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const [showInterviewDialog, setShowInterviewDialog] = useState(false);
 
   const evaluation = candidate?.evaluation;
 
@@ -94,6 +97,11 @@ export default function CandidatePage() {
     } catch {
       toast.error("Rescore failed.");
     }
+  };
+
+  const handleSendInvitation = () => {
+    setShowInterviewDialog(false);
+    toast.success("Interview invitation prepared for sending.");
   };
 
   if (isLoading) {
@@ -156,12 +164,24 @@ export default function CandidatePage() {
               </Button>
             </a>
           )}
+          <Button size="md" onClick={() => setShowInterviewDialog(true)}>
+            <CalendarDays size={15} />
+            Schedule interview
+          </Button>
           <Button variant="outline" size="md" onClick={handleRescore} loading={rescoring}>
             {!rescoring && <RefreshCw size={15} />}
             Rescore
           </Button>
         </div>
       </div>
+
+      <ScheduleInterviewDialog
+        open={showInterviewDialog}
+        candidate={candidate}
+        jobTitle={job?.title}
+        onClose={() => setShowInterviewDialog(false)}
+        onSend={handleSendInvitation}
+      />
 
       {showCvPreview && candidate.has_cv_preview && (
         <Card className="mh-cv-preview-card">
