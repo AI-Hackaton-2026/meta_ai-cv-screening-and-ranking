@@ -129,6 +129,14 @@ class LeaderboardEntry(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LeaderboardPage(BaseModel):
+    items: list[LeaderboardEntry]
+    total: int
+    offset: int
+    limit: int
+    search: str | None = None
+
+
 class BatchStatusOut(BaseModel):
     total: int
     pending: int
