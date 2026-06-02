@@ -300,6 +300,35 @@ async def upload_candidates(
     }
 
 
+@router.delete("/{job_id}/candidates")
+async def clear_candidates(
+    job_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Delete all candidates and evaluations for a job."""
+    await _get_job_or_404(job_id, session)
+
+    result = await session.execute(select(Candidate).where(Candidate.job_id == job_id))
+    candidates = result.scalars().all()
+    storage_paths = [candidate.storage_path for candidate in candidates if candidate.storage_path]
+
+    if storage_paths:
+        try:
+            await delete_cvs(storage_paths)
+        except StorageError:
+            logger.exception("Could not delete stored CVs for job %s", job_id)
+            raise HTTPException(
+                status_code=502, detail="Could not delete CV files from Supabase Storage"
+            ) from None
+
+    deleted_count = len(candidates)
+    for candidate in candidates:
+        await session.delete(candidate)
+    await session.commit()
+
+    return {"deleted": deleted_count}
+
+
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
 

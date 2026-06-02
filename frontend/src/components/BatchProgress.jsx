@@ -25,8 +25,8 @@ export function BatchProgress({ jobId }) {
   if (active === 0) return null;
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between text-xs text-[var(--color-ink-muted)]">
+    <div className="mh-batch-progress">
+      <div className="mh-batch-progress-head">
         <span>
           {processing > 0
             ? `Scoring ${processing} candidate${processing !== 1 ? "s" : ""}…`
@@ -36,12 +36,9 @@ export function BatchProgress({ jobId }) {
           {done}/{total} done{error > 0 ? ` · ${error} error${error > 1 ? "s" : ""}` : ""}
         </span>
       </div>
-      <div
-        className="w-full rounded-full overflow-hidden"
-        style={{ height: 6, background: "var(--color-border)" }}
-      >
+      <div className="mh-batch-track">
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="mh-batch-fill"
           style={{
             width: `${pct}%`,
             background: error > 0 && active === 0 ? "#D97706" : "var(--color-primary)",

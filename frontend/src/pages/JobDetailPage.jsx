@@ -29,6 +29,7 @@ import { WeightsEditor } from "@/components/WeightsEditor";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   useBatchStatus,
+  useClearCandidatesForJob,
   useDeleteCandidateForJob,
   useJob,
   useLeaderboard,
@@ -65,10 +66,13 @@ export default function JobDetailPage() {
   const [offset, setOffset] = useState(0);
   const [rescoringId, setRescoringId] = useState(null);
   const [rescoringAll, setRescoringAll] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [showClearAll, setShowClearAll] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
   const { mutateAsync: rescoreCandidate } = useRescoreForJob(jobId);
   const { mutateAsync: deleteCandidate } = useDeleteCandidateForJob(jobId);
+  const { mutateAsync: clearCandidates } = useClearCandidatesForJob(jobId);
 
   const leaderboardParams = {
     search: debouncedQuery.trim() || undefined,
@@ -182,6 +186,22 @@ export default function JobDetailPage() {
     }
   };
 
+  const handleConfirmClearAll = async () => {
+    setClearingAll(true);
+    try {
+      const result = await clearCandidates();
+      setCompareIds([]);
+      setShowCompare(false);
+      setOffset(0);
+      setShowClearAll(false);
+      toast.success(`${result.deleted ?? 0} candidate${result.deleted === 1 ? "" : "s"} removed.`);
+    } catch {
+      toast.error("Failed to clear candidates.");
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
   const handleDeleteClick = (event, candidate) => {
     event.stopPropagation();
     setCandidateToDelete(candidate);
@@ -285,6 +305,7 @@ export default function JobDetailPage() {
                   aria-label="Search candidates"
                 />
               </div>
+              <BatchProgress jobId={jobId} />
             </div>
             <div className="mh-row">
               {compareIds.length >= 2 && (
@@ -306,6 +327,15 @@ export default function JobDetailPage() {
                 </Button>
               )}
               <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowClearAll(true)}
+                disabled={clearingAll || leaderboardTotal === 0}
+              >
+                <Trash2 size={14} />
+                Clear all
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={handleRescoreAll}
@@ -323,8 +353,6 @@ export default function JobDetailPage() {
               </a>
             </div>
           </div>
-
-          <BatchProgress jobId={jobId} />
 
           {lbLoading ? (
             <div className="mh-table-empty">
@@ -547,6 +575,34 @@ export default function JobDetailPage() {
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-(--muted-foreground)">
             {job.description}
           </p>
+        </div>
+      </Dialog>
+
+      <Dialog open={showClearAll} onClose={() => !clearingAll && setShowClearAll(false)} title="Clear all candidates" size="sm">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm leading-relaxed text-(--muted-foreground)">
+            Remove all candidates from this job? This will empty the leaderboard and delete
+            uploaded CVs and evaluations for this job.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowClearAll(false)}
+              disabled={clearingAll}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleConfirmClearAll}
+              loading={clearingAll}
+            >
+              <Trash2 size={14} />
+              Clear all
+            </Button>
+          </div>
         </div>
       </Dialog>
 
