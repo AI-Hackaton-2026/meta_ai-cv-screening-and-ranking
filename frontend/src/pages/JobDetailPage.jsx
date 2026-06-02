@@ -579,7 +579,11 @@ export default function JobDetailPage() {
       </div>
 
       {showCompare && compareIds.length >= 2 && (
-        <CompareView candidateIds={compareIds} onClose={() => setShowCompare(false)} />
+        <CompareView
+          candidateIds={compareIds}
+          requirements={job.requirements ?? []}
+          onClose={() => setShowCompare(false)}
+        />
       )}
 
       <Dialog open={!!candidateToDelete} onClose={handleCancelDelete} title="Delete CV" size="sm">
