@@ -48,24 +48,18 @@ export function UploadZone({ jobId, onUploaded }) {
       {/* Drop target */}
       <div
         {...getRootProps()}
-        className={cn(
-          "flex flex-col items-center justify-center gap-2 p-6 rounded-[var(--radius-lg)]",
-          "border-2 border-dashed cursor-pointer transition-all duration-150",
-          isDragActive
-            ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
-            : "border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)]"
-        )}
+        className={cn("mh-drop", isDragActive && "drag")}
       >
         <input {...getInputProps()} />
         <UploadCloud
           size={28}
-          style={{ color: isDragActive ? "var(--color-primary)" : "var(--color-ink-subtle)" }}
+          style={{ color: isDragActive ? "var(--primary)" : "var(--subtle-foreground)" }}
         />
         <div className="text-center">
-          <p className="text-sm font-medium text-[var(--color-ink)]">
-            {isDragActive ? "Drop CVs here" : "Drag & drop CVs here"}
+          <p className="text-sm font-semibold text-[var(--foreground)]">
+            {isDragActive ? "Drop CVs here" : "Drag & drop CVs, or click to browse"}
           </p>
-          <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+          <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
             PDF or DOCX — single or batch
           </p>
         </div>
@@ -77,18 +71,18 @@ export function UploadZone({ jobId, onUploaded }) {
           {files.map((f) => (
             <div
               key={f.name}
-              className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] bg-[var(--color-primary-light)]"
+              className="mh-filerow"
             >
-              <FileText size={14} style={{ color: "var(--color-primary)" }} />
-              <span className="flex-1 text-xs text-[var(--color-ink)] truncate">{f.name}</span>
-              <span className="text-xs text-[var(--color-ink-muted)]">
+              <FileText size={14} style={{ color: "var(--primary)" }} />
+              <span className="flex-1 text-xs text-[var(--foreground)] truncate">{f.name}</span>
+              <span className="text-xs text-[var(--muted-foreground)]">
                 {(f.size / 1024).toFixed(0)} KB
               </span>
               <button
                 onClick={(e) => { e.stopPropagation(); removeFile(f.name); }}
-                className="p-0.5 rounded hover:bg-[var(--color-primary-medium)] transition-colors"
+                className="p-0.5 rounded hover:bg-[var(--primary-medium)] transition-colors"
               >
-                <X size={12} style={{ color: "var(--color-ink-muted)" }} />
+                <X size={12} style={{ color: "var(--muted-foreground)" }} />
               </button>
             </div>
           ))}
