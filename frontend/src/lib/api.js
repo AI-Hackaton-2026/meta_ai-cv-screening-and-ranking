@@ -32,8 +32,8 @@ export const jobsApi = {
       .then((r) => r.data);
   },
 
-  getLeaderboard: (jobId) =>
-    apiClient.get(`/jobs/${jobId}/candidates`).then((r) => r.data),
+  getLeaderboard: (jobId, params = {}) =>
+    apiClient.get(`/jobs/${jobId}/candidates`, { params }).then((r) => r.data),
 
   getBatchStatus: (jobId) =>
     apiClient.get(`/jobs/${jobId}/status`).then((r) => r.data),

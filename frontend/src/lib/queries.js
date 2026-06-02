@@ -13,6 +13,7 @@ export const keys = {
   jobs: ["jobs"],
   job: (id) => ["jobs", id],
   leaderboard: (jobId) => ["jobs", jobId, "leaderboard"],
+  leaderboardPage: (jobId, params) => ["jobs", jobId, "leaderboard", params],
   batchStatus: (jobId) => ["jobs", jobId, "status"],
   candidate: (id) => ["candidates", id],
 };
@@ -35,10 +36,10 @@ export function useJob(id, options = {}) {
   });
 }
 
-export function useLeaderboard(jobId, options = {}) {
+export function useLeaderboard(jobId, params = {}, options = {}) {
   return useQuery({
-    queryKey: keys.leaderboard(jobId),
-    queryFn: () => jobsApi.getLeaderboard(jobId),
+    queryKey: keys.leaderboardPage(jobId, params),
+    queryFn: () => jobsApi.getLeaderboard(jobId, params),
     enabled: !!jobId,
     ...options,
   });
