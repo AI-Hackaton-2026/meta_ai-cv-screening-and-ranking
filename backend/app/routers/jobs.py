@@ -7,15 +7,15 @@ import asyncio
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from fastapi.responses import Response
-from sqlalchemy import func, select
+from sqlalchemy import and_, asc, desc, func, not_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.db import AsyncSessionLocal, get_session
-from app.models import Candidate, Job, Requirement
+from app.models import Candidate, Evaluation, Job, Requirement
 from app.schemas import (
     BatchStatusOut,
     CategoryScoreOut,
@@ -24,6 +24,7 @@ from app.schemas import (
     JobOut,
     JobUpdate,
     LeaderboardEntry,
+    LeaderboardPage,
 )
 from app.services.export import generate_shortlist_csv
 from app.services.parsing import ParsingError, extract_text
@@ -294,33 +295,83 @@ async def upload_candidates(
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
 
-@router.get("/{job_id}/candidates", response_model=list[LeaderboardEntry])
+@router.get("/{job_id}/candidates", response_model=LeaderboardPage)
 async def get_leaderboard(
     job_id: int,
+    search: str | None = Query(default=None, max_length=200),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=25, ge=1, le=1000),
+    sort_dir: str = Query(default="desc", pattern="^(asc|desc)$"),
     session: AsyncSession = Depends(get_session),
-) -> list[LeaderboardEntry]:
+) -> LeaderboardPage:
     """
-    Returns ranked leaderboard for a job. Polled by the frontend.
-    Only done candidates are ranked; pending/processing/error appear at the bottom.
+    Returns an offset-paginated leaderboard for a job. Polled by the frontend.
+    Search and pagination are applied on the backend.
     """
     await _get_job_or_404(job_id, session)
 
-    result = await session.execute(
-        select(Candidate)
-        .options(selectinload(Candidate.evaluation))
-        .where(Candidate.job_id == job_id)
-    )
-    candidates = result.scalars().all()
+    search_term = search.strip() if search else None
+    filters = [Candidate.job_id == job_id]
+    if search_term:
+        needle = f"%{search_term}%"
+        filters.append(Candidate.name.ilike(needle))
 
-    done = [c for c in candidates if c.status == "done" and c.evaluation]
-    done.sort(
-        key=lambda c: c.evaluation.overall_score if c.evaluation else -1,
-        reverse=True,
+    done_filter = [*filters, Candidate.status == "done"]
+    others_filter = [
+        *filters,
+        not_(and_(Candidate.status == "done", Evaluation.id.is_not(None))),
+    ]
+
+    done_count_result = await session.execute(
+        select(func.count(Candidate.id)).join(Evaluation).where(*done_filter)
     )
-    others = [c for c in candidates if c not in done]
+    done_count = done_count_result.scalar_one()
+
+    others_count_result = await session.execute(
+        select(func.count(Candidate.id)).outerjoin(Evaluation).where(*others_filter)
+    )
+    others_count = others_count_result.scalar_one()
+    total = done_count + others_count
+
+    score_order = (
+        asc(Evaluation.overall_score) if sort_dir == "asc" else desc(Evaluation.overall_score)
+    )
+    page_candidates: list[tuple[int, Candidate]] = []
+
+    if offset < done_count:
+        done_limit = min(limit, done_count - offset)
+        done_result = await session.execute(
+            select(Candidate)
+            .join(Evaluation)
+            .options(selectinload(Candidate.evaluation))
+            .where(*done_filter)
+            .order_by(score_order, Candidate.uploaded_at.desc(), Candidate.id.desc())
+            .offset(offset)
+            .limit(done_limit)
+        )
+        page_candidates.extend(
+            (offset + index + 1, candidate)
+            for index, candidate in enumerate(done_result.scalars().all())
+        )
+
+    remaining = limit - len(page_candidates)
+    if remaining > 0:
+        others_offset = max(offset - done_count, 0)
+        others_result = await session.execute(
+            select(Candidate)
+            .outerjoin(Evaluation)
+            .options(selectinload(Candidate.evaluation))
+            .where(*others_filter)
+            .order_by(Candidate.uploaded_at.desc(), Candidate.id.desc())
+            .offset(others_offset)
+            .limit(remaining)
+        )
+        page_candidates.extend(
+            (done_count + 1, candidate) for candidate in others_result.scalars().all()
+        )
 
     entries: list[LeaderboardEntry] = []
-    for rank, cand in enumerate(done, 1):
+    for rank, cand in page_candidates:
         ev = cand.evaluation
         cs = (
             {
@@ -345,23 +396,13 @@ async def get_leaderboard(
             )
         )
 
-    for cand in others:
-        entries.append(
-            LeaderboardEntry(
-                rank=len(done) + 1,
-                id=cand.id,
-                name=cand.name,
-                original_filename=cand.original_filename,
-                status=cand.status,
-                overall_score=None,
-                category_scores=None,
-                recommendation=None,
-                summary=None,
-                error=cand.error,
-            )
-        )
-
-    return entries
+    return LeaderboardPage(
+        items=entries,
+        total=total,
+        offset=offset,
+        limit=limit,
+        search=search_term,
+    )
 
 
 @router.get("/{job_id}/status", response_model=BatchStatusOut)

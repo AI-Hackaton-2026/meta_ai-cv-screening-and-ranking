@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
@@ -39,6 +39,7 @@ import { jobsApi } from "@/lib/api";
 
 const CATEGORIES = ["skills", "experience", "education", "domain_fit"];
 const CAT_LABEL = { skills: "Skills", experience: "Exp.", education: "Edu.", domain_fit: "Domain" };
+const PAGE_SIZE = 10;
 
 export default function JobDetailPage() {
   const { id } = useParams();
@@ -56,30 +57,65 @@ export default function JobDetailPage() {
   });
   const { data: statusData } = useBatchStatus(jobId, { refetchInterval: 3000 });
 
-  const hasActive = statusData ? statusData.pending + statusData.processing > 0 : false;
-  const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(jobId, {
-    refetchInterval: (query) => {
-      const rows = query?.state?.data ?? [];
-      const leaderboardHasActive = rows.some(
-        (entry) => entry.status === "pending" || entry.status === "processing"
-      );
-      return hasActive || leaderboardHasActive ? 2000 : false;
-    },
-  });
-
   const [compareIds, setCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
   const [showRequirements, setShowRequirements] = useState(true);
   const [showWeights, setShowWeights] = useState(true);
   const [showDescription, setShowDescription] = useState(false);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [sort, setSort] = useState({ key: "overall_score", dir: "desc" });
+  const [offset, setOffset] = useState(0);
   const [rescoringId, setRescoringId] = useState(null);
   const [rescoringAll, setRescoringAll] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
   const { mutateAsync: rescoreCandidate } = useRescoreForJob(jobId);
   const { mutateAsync: deleteCandidate } = useDeleteCandidateForJob(jobId);
+
+  const leaderboardParams = {
+    search: debouncedQuery.trim() || undefined,
+    offset,
+    limit: PAGE_SIZE,
+    sort_dir: sort.dir,
+  };
+  const hasActive = statusData ? statusData.pending + statusData.processing > 0 : false;
+  const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
+    jobId,
+    leaderboardParams,
+    {
+      refetchInterval: (queryState) => {
+        const rows = queryState?.state?.data?.items ?? [];
+        const leaderboardHasActive = rows.some(
+          (entry) => entry.status === "pending" || entry.status === "processing"
+        );
+        return hasActive || leaderboardHasActive ? 2000 : false;
+      },
+    }
+  );
+
+  const leaderboardRows = leaderboard?.items ?? [];
+  const leaderboardTotal = leaderboard?.total ?? 0;
+  const pageStart = leaderboardTotal === 0 ? 0 : offset + 1;
+  const pageEnd = Math.min(offset + PAGE_SIZE, leaderboardTotal);
+  const canPageBack = offset > 0;
+  const canPageForward = offset + PAGE_SIZE < leaderboardTotal;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(query);
+      setOffset(0);
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (leaderboardTotal > 0 && offset >= leaderboardTotal) {
+      const lastPageOffset = Math.floor((leaderboardTotal - 1) / PAGE_SIZE) * PAGE_SIZE;
+      setOffset(lastPageOffset);
+    }
+  }, [leaderboardTotal, offset]);
 
   if (jobLoading) {
     return (
@@ -94,9 +130,7 @@ export default function JobDetailPage() {
 
   const mustHave = job.requirements?.filter((r) => r.kind === "must_have") ?? [];
   const niceToHave = job.requirements?.filter((r) => r.kind === "nice_to_have") ?? [];
-  const screenedCount = leaderboard?.filter((entry) => entry.status === "done").length ?? 0;
-  const rescorableCount =
-    leaderboard?.filter((entry) => entry.status === "done" || entry.status === "error").length ?? 0;
+  const screenedCount = statusData?.done ?? 0;
 
   const toggleCompare = (candidateId) => {
     setCompareIds((prev) =>
@@ -108,22 +142,8 @@ export default function JobDetailPage() {
     );
   };
 
-  const sortedLeaderboard = [...(leaderboard ?? [])]
-    .filter((entry) => {
-      const needle = query.trim().toLowerCase();
-      if (!needle) return true;
-      return (
-        entry.name.toLowerCase().includes(needle) ||
-        entry.original_filename.toLowerCase().includes(needle)
-      );
-    })
-    .sort((a, b) => {
-      const valA = a[sort.key] ?? -1;
-      const valB = b[sort.key] ?? -1;
-      return sort.dir === "desc" ? valB - valA : valA - valB;
-    });
-
   const handleSort = (key) => {
+    setOffset(0);
     setSort((prev) =>
       prev.key === key ? { key, dir: prev.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" }
     );
@@ -143,13 +163,19 @@ export default function JobDetailPage() {
   };
 
   const handleRescoreAll = async () => {
-    const candidates = (leaderboard ?? []).filter(
-      (entry) => entry.status === "done" || entry.status === "error"
-    );
-    if (!candidates.length) return;
-
     setRescoringAll(true);
     try {
+      const result = await jobsApi.getLeaderboard(jobId, {
+        search: debouncedQuery.trim() || undefined,
+        offset: 0,
+        limit: 1000,
+        sort_dir: sort.dir,
+      });
+      const candidates = (result.items ?? []).filter(
+        (entry) => entry.status === "done" || entry.status === "error"
+      );
+      if (!candidates.length) return;
+
       const results = await Promise.allSettled(
         candidates.map((candidate) => rescoreCandidate(candidate.id))
       );
@@ -340,7 +366,7 @@ export default function JobDetailPage() {
                 size="sm"
                 onClick={handleRescoreAll}
                 loading={rescoringAll}
-                disabled={rescoringAll || rescorableCount === 0}
+                disabled={rescoringAll || leaderboardTotal === 0}
               >
                 {!rescoringAll && <RefreshCw size={14} />}
                 Rescore all
@@ -355,7 +381,7 @@ export default function JobDetailPage() {
               <span className="mh-spinner" />
               <span>Loading candidates…</span>
             </div>
-          ) : sortedLeaderboard.length === 0 ? (
+          ) : leaderboardRows.length === 0 ? (
             <div className="mh-table-empty">
               <p>No candidates match this view.</p>
               <span>Upload CVs or adjust the search term.</span>
@@ -398,7 +424,7 @@ export default function JobDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedLeaderboard.map((entry) => {
+                  {leaderboardRows.map((entry) => {
                     const isInCompare = compareIds.includes(entry.id);
                     const isDone = entry.status === "done";
                     const isError = entry.status === "error";
@@ -519,6 +545,34 @@ export default function JobDetailPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!lbLoading && leaderboardTotal > 0 && (
+            <div className="mh-row justify-between px-1 pt-1">
+              <span className="text-xs text-[var(--muted-foreground)]">
+                Showing {pageStart}-{pageEnd} of {leaderboardTotal}
+              </span>
+              <div className="mh-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!canPageBack}
+                  onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!canPageForward}
+                  onClick={() => setOffset((current) => current + PAGE_SIZE)}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </section>
