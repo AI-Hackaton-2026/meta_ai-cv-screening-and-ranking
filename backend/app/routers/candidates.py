@@ -16,6 +16,7 @@ from app.models import Candidate, Evaluation
 from app.schemas import CandidateOut, CategoryScoreOut, EvaluationOut, RequirementMatchOut
 from app.services.export import generate_candidate_pdf
 from app.services.scoring import score_candidate
+from app.services.storage import StorageError, delete_cvs
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/candidates", tags=["candidates"])
@@ -89,6 +90,15 @@ async def delete_candidate(
     candidate = await session.get(Candidate, candidate_id)
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
+
+    if candidate.storage_path:
+        try:
+            await delete_cvs([candidate.storage_path])
+        except StorageError:
+            logger.exception("Could not delete stored CV for candidate %s", candidate_id)
+            raise HTTPException(
+                status_code=502, detail="Could not delete CV file from Supabase Storage"
+            ) from None
 
     await session.delete(candidate)
     await session.commit()
