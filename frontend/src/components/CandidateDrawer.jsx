@@ -15,7 +15,7 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useCandidate, useRescore } from "@/lib/queries";
 import { candidatesApi } from "@/lib/api";
-import { formatScore, recommendationClass, recommendationLabel } from "@/lib/utils";
+import { formatScore, recommendationLabel } from "@/lib/utils";
 
 const CATEGORY_LABELS = {
   skills: "Skills",

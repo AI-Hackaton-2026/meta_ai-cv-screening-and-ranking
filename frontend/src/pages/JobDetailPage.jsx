@@ -8,6 +8,7 @@ import {
   GitCompare,
   SlidersHorizontal,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -19,7 +20,7 @@ import { UploadZone } from "@/components/UploadZone";
 import { CandidateDrawer } from "@/components/CandidateDrawer";
 import { CompareView } from "@/components/CompareView";
 import { WeightsEditor } from "@/components/WeightsEditor";
-import { useJob, useLeaderboard, useBatchStatus } from "@/lib/queries";
+import { useJob, useLeaderboard, useBatchStatus, useRescoreForJob } from "@/lib/queries";
 import { jobsApi } from "@/lib/api";
 import { recommendationClass, recommendationLabel } from "@/lib/utils";
 
@@ -30,25 +31,46 @@ export default function JobDetailPage() {
   const { id } = useParams();
   const jobId = Number(id);
 
-  const { data: job, isLoading: jobLoading } = useJob(jobId);
+  const { data: job, isLoading: jobLoading } = useJob(jobId, {
+    refetchInterval: (query) => {
+      const currentJob = query?.state?.data;
+      return currentJob?.extraction_status === "pending" ||
+        currentJob?.extraction_status === "extracting"
+        ? 1500
+        : false;
+    },
+  });
   const { data: statusData } = useBatchStatus(jobId, { refetchInterval: 3000 });
 
   // Poll leaderboard while any candidates are active
   const hasActive = statusData ? statusData.pending + statusData.processing > 0 : false;
   const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(jobId, {
-    refetchInterval: hasActive ? 2000 : false,
+    refetchInterval: (query) => {
+      const rows = query?.state?.data ?? [];
+      const leaderboardHasActive = rows.some(
+        (entry) => entry.status === "pending" || entry.status === "processing"
+      );
+      return hasActive || leaderboardHasActive ? 2000 : false;
+    },
   });
 
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [compareIds, setCompareIds] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
   const [showWeights, setShowWeights] = useState(false);
   const [showUpload, setShowUpload] = useState(true);
   const [sort, setSort] = useState({ key: "overall_score", dir: "desc" });
+  const [rescoringId, setRescoringId] = useState(null);
+  const { mutateAsync: rescoreCandidate } = useRescoreForJob(jobId);
 
   // Auto-collapse upload once candidates exist
   useEffect(() => {
     if (leaderboard?.length > 0) setShowUpload(false);
   }, [leaderboard?.length]);
+
+  useEffect(() => {
+    if (compareIds.length < 2) setShowCompare(false);
+  }, [compareIds.length]);
 
   if (jobLoading) {
     return (
@@ -84,6 +106,16 @@ export default function JobDetailPage() {
     setSort((prev) =>
       prev.key === key ? { key, dir: prev.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" }
     );
+  };
+
+  const handleRetry = async (event, candidateId) => {
+    event.stopPropagation();
+    setRescoringId(candidateId);
+    try {
+      await rescoreCandidate(candidateId);
+    } finally {
+      setRescoringId(null);
+    }
   };
 
   const SortIcon = ({ k }) => {
@@ -123,12 +155,19 @@ export default function JobDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {compareIds.length >= 2 && (
-            <Button variant="outline" size="sm" onClick={() => setCompareIds([])}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCompareIds([]);
+                setShowCompare(false);
+              }}
+            >
               Clear compare ({compareIds.length})
             </Button>
           )}
           {compareIds.length >= 2 && (
-            <Button size="sm" onClick={() => {}}>
+            <Button size="sm" onClick={() => setShowCompare(true)}>
               <GitCompare size={14} />
               Compare {compareIds.length}
             </Button>
@@ -248,16 +287,17 @@ export default function JobDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedLeaderboard.map((entry, i) => {
+                  {sortedLeaderboard.map((entry) => {
                     const isInCompare = compareIds.includes(entry.id);
                     const isDone = entry.status === "done";
+                    const isError = entry.status === "error";
 
                     return (
                       <tr
                         key={entry.id}
                         className="border-t border-[var(--color-border)] hover:bg-[var(--color-primary-light)] transition-colors cursor-pointer"
                         style={isInCompare ? { background: "rgba(114,107,255,0.06)" } : {}}
-                        onClick={() => isDone && setSelectedCandidate(entry.id)}
+                        onClick={() => (isDone || isError) && setSelectedCandidate(entry.id)}
                       >
                         {/* Rank */}
                         <td className="px-3 py-3">
@@ -273,6 +313,7 @@ export default function JobDetailPage() {
                               <input
                                 type="checkbox"
                                 checked={isInCompare}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => { e.stopPropagation(); toggleCompare(entry.id); }}
                                 className="accent-[var(--color-primary)]"
                                 title="Add to compare"
@@ -285,6 +326,14 @@ export default function JobDetailPage() {
                               <p className="text-[10px] text-[var(--color-ink-muted)] truncate max-w-[140px]">
                                 {entry.original_filename}
                               </p>
+                              {isError && entry.error && (
+                                <p
+                                  className="text-[10px] text-red-600 truncate max-w-[220px]"
+                                  title={entry.error}
+                                >
+                                  {entry.error}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -333,6 +382,20 @@ export default function JobDetailPage() {
                               View
                             </button>
                           )}
+                          {isError && (
+                            <button
+                              className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline disabled:opacity-50"
+                              disabled={rescoringId === entry.id}
+                              onClick={(e) => handleRetry(e, entry.id)}
+                              title={entry.error ?? "Retry scoring"}
+                            >
+                              <RefreshCw
+                                size={12}
+                                className={rescoringId === entry.id ? "animate-spin" : ""}
+                              />
+                              Retry
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -354,10 +417,10 @@ export default function JobDetailPage() {
       )}
 
       {/* Compare view */}
-      {compareIds.length >= 2 && (
+      {showCompare && compareIds.length >= 2 && (
         <CompareView
           candidateIds={compareIds}
-          onClose={() => setCompareIds([])}
+          onClose={() => setShowCompare(false)}
         />
       )}
     </div>

@@ -124,6 +124,7 @@ class LeaderboardEntry(BaseModel):
     category_scores: dict[str, CategoryScoreOut] | None
     recommendation: str | None
     summary: str | None
+    error: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -171,6 +172,21 @@ class CategoryScore(BaseModel):
     rationale: str = Field(..., description="One-paragraph explanation of the score")
 
 
+class CategoryScoreSet(BaseModel):
+    """Required scores for all four scoring categories."""
+
+    skills: CategoryScore = Field(..., description="Technical skills score and rationale")
+    experience: CategoryScore = Field(
+        ..., description="Professional experience score and rationale"
+    )
+    education: CategoryScore = Field(
+        ..., description="Education and credentials score and rationale"
+    )
+    domain_fit: CategoryScore = Field(
+        ..., description="Domain and role-context fit score and rationale"
+    )
+
+
 class RequirementMatch(BaseModel):
     """How well the candidate meets a specific requirement."""
 
@@ -187,9 +203,9 @@ class EvaluationResult(BaseModel):
 
     # Claude also extracts the candidate's name if not already known
     candidate_name: str = Field(..., description="Candidate's full name as found in the CV")
-    category_scores: dict[str, CategoryScore] = Field(
+    category_scores: CategoryScoreSet = Field(
         ...,
-        description="Scores for: skills, experience, education, domain_fit",
+        description="Scores for all categories: skills, experience, education, domain_fit",
     )
     requirement_matches: list[RequirementMatch]
     strengths: list[str] = Field(..., description="3-5 key strengths relative to this specific job")

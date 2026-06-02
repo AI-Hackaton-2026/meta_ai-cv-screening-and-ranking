@@ -90,6 +90,7 @@ async def seed() -> None:
             session.add(job)
             await session.flush()
             job_id = job.id
+            candidate_ids: list[int] = []
 
             # Load sample CVs from samples/cvs/
             cv_dir = SAMPLES_DIR / "cvs"
@@ -107,6 +108,8 @@ async def seed() -> None:
                             status="pending",
                         )
                         session.add(candidate)
+                        await session.flush()
+                        candidate_ids.append(candidate.id)
                         logger.info("Added candidate %s to job %s", cv_file.name, job_id)
                     except Exception as e:
                         logger.warning("Could not load %s: %s", cv_file.name, e)
@@ -114,12 +117,13 @@ async def seed() -> None:
             await session.commit()
             logger.info("Created job: %s (id=%s)", job_data["title"], job_id)
 
-            # Trigger requirement extraction + scoring in background
-            import asyncio as _asyncio
-
+            # Run extraction before scoring so candidate evaluations can reference requirements.
             from app.routers.jobs import _trigger_extraction
+            from app.services.scoring import process_job_candidates
 
-            _asyncio.create_task(_trigger_extraction(job_id))
+            await _trigger_extraction(job_id)
+            if candidate_ids:
+                await process_job_candidates(candidate_ids, AsyncSessionLocal)
 
     logger.info("Seed complete.")
 

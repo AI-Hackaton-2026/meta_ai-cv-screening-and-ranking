@@ -37,9 +37,9 @@ ignore = ["B008"]  # FastAPI Depends() in default args is fine
 known-first-party = ["app"]
 
 [tool.pyright]
+include = ["app"]
+exclude = ["data/", ".venv/", "**/__pycache__/"]
 pythonVersion = "3.12"
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "basic"
-include = ["app"]
-exclude = ["data/", ".venv/", "**/__pycache__/"]
