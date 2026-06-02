@@ -13,9 +13,7 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
-  Sparkles,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -60,8 +58,6 @@ export default function JobDetailPage() {
 
   const [compareIds, setCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
-  const [showRequirements, setShowRequirements] = useState(true);
-  const [showWeights, setShowWeights] = useState(true);
   const [showAboutRole, setShowAboutRole] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
@@ -241,79 +237,54 @@ export default function JobDetailPage() {
       </div>
 
       <div className="mh-job-detail-grid">
-        <aside className="mh-stack">
-          <Card>
-            <SectionButton
-              icon={<UploadCloud size={15} />}
-              title="Upload CVs"
-              right={<span className="mh-card-action">Start here</span>}
-            />
-            <div className="mt-4">
-              <UploadZone jobId={jobId} />
-            </div>
-          </Card>
+        <aside className="mh-stack mh-job-sidebar">
+          <div className="mh-sidebar-upload-row">
+            <UploadZone jobId={jobId} compact />
+          </div>
 
           {(mustHave.length > 0 || niceToHave.length > 0) && (
             <Card>
-              <button
-                className="mh-sec-head mh-sec-button"
-                onClick={() => setShowRequirements((current) => !current)}
-              >
-                <span className="mh-sec-title">
-                  <ListChecks size={15} />
-                  Requirements
-                </span>
-                <span className="mh-row">
-                  <Badge variant="muted">{mustHave.length + niceToHave.length}</Badge>
-                  {showRequirements ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                </span>
-              </button>
-              <div className={`mh-collapse ${showRequirements ? "is-open" : ""}`}>
-                <div className="mh-collapse-inner">
+              <SectionButton
+                icon={<ListChecks size={15} />}
+                title="Requirements"
+                right={<Badge variant="muted">{mustHave.length + niceToHave.length}</Badge>}
+              />
+              <div className="mh-static-card-body">
+                <div className="mh-requirements-scroll">
                   {mustHave.length > 0 && (
                     <RequirementGroup title="Must-have" requirements={mustHave} variant="default" />
                   )}
                   {niceToHave.length > 0 && (
                     <RequirementGroup title="Nice-to-have" requirements={niceToHave} variant="muted" />
                   )}
-                  <p className="mh-ai-note">
-                    <Sparkles size={13} />
-                    Extracted by Claude from the description
-                  </p>
                 </div>
               </div>
             </Card>
           )}
 
           <Card>
-            <button
-              className="mh-sec-head mh-sec-button"
-              onClick={() => setShowWeights((current) => !current)}
-            >
-              <span className="mh-sec-title">
-                <SlidersHorizontal size={15} />
-                Scoring weights
-              </span>
-              {showWeights ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-            </button>
-            <div className={`mh-collapse ${showWeights ? "is-open" : ""}`}>
-              <div className="mh-collapse-inner">
-                <WeightsEditor jobId={jobId} currentWeights={job.category_weights} />
-              </div>
+            <SectionButton
+              icon={<SlidersHorizontal size={15} />}
+              title="Scoring weights"
+            />
+            <div className="mh-static-card-body">
+              <WeightsEditor jobId={jobId} currentWeights={job.category_weights} />
             </div>
           </Card>
         </aside>
 
         <section className="mh-leaderboard-panel">
           <div className="mh-tabletop">
-            <div className="mh-search mh-candidate-search">
-              <Search size={16} className="mh-input-icon" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search candidates..."
-                aria-label="Search candidates"
-              />
+            <div className="mh-tabletop-primary">
+              <div className="mh-search mh-candidate-search">
+                <Search size={16} className="mh-input-icon" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search candidates..."
+                  aria-label="Search candidates"
+                />
+              </div>
             </div>
             <div className="mh-row">
               {compareIds.length >= 2 && (
@@ -619,9 +590,9 @@ function RequirementGroup({ title, requirements, variant }) {
   return (
     <div className="mh-req-group">
       <p className="mh-reqgroup-label">{title}</p>
-      <div className="mh-chips">
+      <div className="mh-chips mh-requirement-chips">
         {requirements.map((requirement) => (
-          <Badge key={requirement.id} variant={variant}>
+          <Badge key={requirement.id} variant={variant} className="mh-req-chip">
             {requirement.text}
           </Badge>
         ))}

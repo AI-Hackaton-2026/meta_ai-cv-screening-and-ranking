@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, FileText, AlertCircle } from "lucide-react";
+import { UploadCloud, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { useUploadCandidates } from "@/lib/queries";
 
 const ACCEPTED = { "application/pdf": [".pdf"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] };
 
-export function UploadZone({ jobId, onUploaded }) {
+export function UploadZone({ jobId, onUploaded, compact = false }) {
   const [files, setFiles] = useState([]);
   const { mutateAsync: upload, isPending } = useUploadCandidates(jobId);
 
@@ -20,10 +20,11 @@ export function UploadZone({ jobId, onUploaded }) {
     });
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: ACCEPTED,
     multiple: true,
+    noClick: compact,
   });
 
   const removeFile = (name) => setFiles((prev) => prev.filter((f) => f.name !== name));
@@ -46,6 +47,47 @@ export function UploadZone({ jobId, onUploaded }) {
       toast.error(error.response?.data?.detail ?? "Upload failed. Check backend connection.");
     }
   };
+
+  if (compact) {
+    return (
+      <div className="mh-compact-upload">
+        <div {...getRootProps({ className: "mh-compact-upload-input" })}>
+          <input {...getInputProps()} />
+        </div>
+        <Button type="button" size="sm" onClick={open}>
+          <UploadCloud size={14} />
+          Upload CVs
+        </Button>
+        {files.length > 0 && (
+          <>
+            <span className="mh-upload-count">
+              {files.length} CV{files.length !== 1 ? "s" : ""} selected
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleUpload}
+              loading={isPending}
+              disabled={!files.length}
+              className="mh-upload-confirm"
+            >
+              Confirm
+            </Button>
+            <button
+              type="button"
+              className="mh-compact-clear"
+              onClick={() => setFiles([])}
+              aria-label="Clear selected CVs"
+              title="Clear selected CVs"
+            >
+              <X size={13} />
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
