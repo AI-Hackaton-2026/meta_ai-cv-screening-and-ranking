@@ -38,8 +38,12 @@ export function AppShell({ children }) {
 
         {/* Nav */}
         <nav className="mh-nav">
-          <NavLink to="/" active={pathname === "/"}>
-            <Briefcase size={14} />
+          <NavLink
+            to="/"
+            active={pathname === "/"}
+            sectionActive={pathname.startsWith("/jobs/") || pathname.startsWith("/candidates/")}
+          >
+            <Briefcase size={16} />
             Jobs
           </NavLink>
         </nav>
@@ -52,13 +56,14 @@ export function AppShell({ children }) {
   );
 }
 
-function NavLink({ to, active, children }) {
+function NavLink({ to, active, sectionActive, children }) {
   return (
     <Link
       to={to}
       className={cn(
         "mh-navlink",
-        active && "is-active"
+        active && "is-active",
+        sectionActive && "is-section-active"
       )}
     >
       {children}

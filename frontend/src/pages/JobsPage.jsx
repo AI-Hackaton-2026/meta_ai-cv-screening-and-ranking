@@ -4,17 +4,16 @@ import {
   Plus,
   Briefcase,
   Users,
-  FlaskConical,
   ChevronRight,
   Search,
   FileSearch,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CreateJobDialog } from "@/components/CreateJobDialog";
-import { useJobs, useSeed } from "@/lib/queries";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useJobs } from "@/lib/queries";
 
 const EXTRACTION_STATUS_BADGE = {
   pending: { label: "Setting up", variant: "muted" },
@@ -26,20 +25,10 @@ const EXTRACTION_STATUS_BADGE = {
 export default function JobsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
-  const { data: jobs, isLoading } = useJobs();
-  const { mutateAsync: seed, isPending: seeding } = useSeed();
-
-  const filteredJobs =
-    jobs?.filter((job) => job.title.toLowerCase().includes(query.trim().toLowerCase())) ?? [];
-
-  const handleSeed = async () => {
-    try {
-      await seed();
-      toast.success("Sample data loading in background…");
-    } catch {
-      toast.error("Seed failed. Is the backend running?");
-    }
-  };
+  const debouncedQuery = useDebounce(query, 300);
+  const { data: jobs, isLoading } = useJobs({
+    search: debouncedQuery.trim() || undefined,
+  });
 
   return (
     <div className="mh-page">
@@ -50,25 +39,19 @@ export default function JobsPage() {
             Create a job, upload CVs, and let AI rank your candidates.
           </p>
         </div>
-        <div className="mh-row">
-          <Button variant="outline" size="md" onClick={handleSeed} loading={seeding}>
-            <FlaskConical size={15} /> Load sample data
-          </Button>
+        <div className="mh-row mh-jobs-actions">
+          <div className="mh-search mh-jobs-search">
+            <Search size={16} className="mh-input-icon" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search jobs by title..."
+              aria-label="Search jobs"
+            />
+          </div>
           <Button onClick={() => setShowCreate(true)}>
             <Plus size={16} /> New job
           </Button>
-        </div>
-      </div>
-
-      <div className="mh-search-wrap">
-        <div className="mh-search">
-          <Search size={16} className="mh-input-icon" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search jobs by title..."
-            aria-label="Search jobs"
-          />
         </div>
       </div>
 
@@ -77,16 +60,14 @@ export default function JobsPage() {
           <span className="mh-spinner" />
           <span className="text-sm">Loading jobs…</span>
         </div>
-      ) : jobs?.length === 0 || filteredJobs.length === 0 ? (
+      ) : jobs?.length === 0 ? (
         <EmptyState
           query={query}
           onNew={() => setShowCreate(true)}
-          onSeed={handleSeed}
-          seeding={seeding}
         />
       ) : (
         <div className="mh-jobgrid">
-          {filteredJobs.map((job) => (
+          {jobs.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
         </div>
@@ -131,7 +112,7 @@ function JobCard({ job }) {
   );
 }
 
-function EmptyState({ query, onNew, onSeed, seeding }) {
+function EmptyState({ query, onNew }) {
   const hasQuery = query.trim().length > 0;
 
   return (
@@ -146,14 +127,11 @@ function EmptyState({ query, onNew, onSeed, seeding }) {
         <p className="mh-page-sub">
           {hasQuery
             ? "Try a different search, or create a new job opening."
-            : "Create your first job opening or load sample data to explore."}
+            : "Create your first job opening to start screening candidates."}
         </p>
       </div>
       {!hasQuery && (
         <div className="mh-row">
-          <Button variant="outline" onClick={onSeed} loading={seeding}>
-            <FlaskConical size={14} /> Load sample data
-          </Button>
           <Button onClick={onNew}>
             <Plus size={14} /> New job
           </Button>

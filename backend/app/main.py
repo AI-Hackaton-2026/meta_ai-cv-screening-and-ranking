@@ -56,18 +56,3 @@ app.include_router(candidates.router)
 @app.get("/health", tags=["meta"])
 async def health() -> dict:
     return {"status": "ok", "model": settings.claude_model}
-
-
-@app.post("/seed", tags=["meta"], status_code=202)
-async def seed_data() -> dict:
-    """Load sample jobs and CVs for demo purposes."""
-    import asyncio
-
-    asyncio.create_task(_run_seed())
-    return {"message": "Seeding started in background"}
-
-
-async def _run_seed() -> None:
-    from app.seed import seed
-
-    await seed()
