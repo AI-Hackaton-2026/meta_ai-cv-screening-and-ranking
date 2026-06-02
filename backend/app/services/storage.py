@@ -61,6 +61,19 @@ async def upload_cv(job_id: int, filename: str, content: bytes, content_type: st
     return storage_path
 
 
+async def download_cv(storage_path: str) -> tuple[bytes, str]:
+    """Download a private CV and return its content and media type."""
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(_storage_url(storage_path), headers=_storage_headers())
+            response.raise_for_status()
+    except httpx.HTTPError as e:
+        detail = e.response.text[:300] if isinstance(e, httpx.HTTPStatusError) else str(e)
+        raise StorageError(f"Supabase download failed: {detail}") from e
+
+    return response.content, response.headers.get("Content-Type", "application/octet-stream")
+
+
 async def delete_cvs(storage_paths: list[str]) -> None:
     """Delete CVs from Storage in one request."""
     if not storage_paths:

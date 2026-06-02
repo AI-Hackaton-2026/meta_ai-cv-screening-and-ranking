@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ClipboardList,
   Download,
+  Eye,
   FileText,
   ListChecks,
   Loader2,
@@ -64,6 +65,7 @@ export default function CandidatePage() {
   const { data: candidate, isLoading } = useCandidate(candidateId);
   const { data: job } = useJob(candidate?.job_id);
   const { mutateAsync: rescore, isPending: rescoring } = useRescore(candidateId);
+  const [showCvPreview, setShowCvPreview] = useState(false);
 
   const evaluation = candidate?.evaluation;
 
@@ -133,6 +135,16 @@ export default function CandidatePage() {
         </div>
 
         <div className="mh-row">
+          {candidate.has_cv_preview && (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setShowCvPreview((current) => !current)}
+            >
+              <Eye size={15} />
+              {showCvPreview ? "Hide CV" : "Preview CV"}
+            </Button>
+          )}
           {evaluation && (
             <a href={candidatesApi.exportPdf(candidateId)} download>
               <Button variant="outline" size="md">
@@ -147,6 +159,17 @@ export default function CandidatePage() {
           </Button>
         </div>
       </div>
+
+      {showCvPreview && candidate.has_cv_preview && (
+        <Card className="mh-cv-preview-card">
+          <SectionHead icon={<FileText size={15} />} title="CV preview" />
+          <iframe
+            className="mh-cv-preview-frame"
+            src={candidatesApi.previewCv(candidateId)}
+            title={`${candidate.name} CV preview`}
+          />
+        </Card>
+      )}
 
       {candidate.status === "error" && (
         <Card className="mb-5 border-red-200 bg-red-50">
