@@ -97,7 +97,7 @@ def _build_requirements_block(requirements: list) -> str:
     return "\n".join(lines) if lines else "No requirements extracted yet."
 
 
-async def _call_claude(prompt: str, output_schema: type, attempt: int = 1) -> object:
+async def _call_claude[T](prompt: str, output_schema: type[T], attempt: int = 1) -> T:
     """
     Make a single structured-output call to Claude.
     Retries once on APIError (network hiccup, rate limit 429, etc.).
@@ -114,14 +114,14 @@ async def _call_claude(prompt: str, output_schema: type, attempt: int = 1) -> ob
             async for _event in stream:
                 pass
             final_message = await stream.get_final_message()
-            return final_message.parsed_output
+            return cast(T, final_message.parsed_output)
     except anthropic.APIStatusError as e:
-        if attempt == 1 and e.status_code in {429, 503, 529}:
-            logger.warning("Claude API status %s, retrying once…", e.status_code)
+        if attempt < 3 and e.status_code in {429, 503, 529}:
+            logger.warning("Claude API status %s, retrying attempt %s…", e.status_code, attempt + 1)
             import asyncio
 
-            await asyncio.sleep(3)
-            return await _call_claude(prompt, output_schema, attempt=2)
+            await asyncio.sleep(30 if e.status_code == 429 else 3)
+            return await _call_claude(prompt, output_schema, attempt=attempt + 1)
         raise
 
 

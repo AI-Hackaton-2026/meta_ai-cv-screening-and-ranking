@@ -22,11 +22,15 @@ export function BatchProgress({ jobId }) {
   const pct = total > 0 ? Math.round((finished / total) * 100) : 0;
   const active = pending + processing;
 
+  if (active === 0) return null;
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between text-xs text-[var(--color-ink-muted)]">
         <span>
-          {active > 0 ? `Scoring ${processing} candidate${processing !== 1 ? "s" : ""}…` : "All scored"}
+          {processing > 0
+            ? `Scoring ${processing} candidate${processing !== 1 ? "s" : ""}…`
+            : `Queued ${pending} candidate${pending !== 1 ? "s" : ""}…`}
         </span>
         <span>
           {done}/{total} done{error > 0 ? ` · ${error} error${error > 1 ? "s" : ""}` : ""}

@@ -108,9 +108,10 @@ async def score_candidate(
             eval_result = await evaluate_candidate(
                 candidate.job, list(requirements), candidate.raw_text
             )
+            category_scores = eval_result.category_scores.model_dump()
 
             overall = compute_overall_score(
-                {k: v.model_dump() for k, v in eval_result.category_scores.items()},
+                category_scores,
                 candidate.job.category_weights,
             )
 
@@ -126,7 +127,7 @@ async def score_candidate(
             evaluation = Evaluation(
                 candidate_id=candidate_id,
                 overall_score=overall,
-                category_scores={k: v.model_dump() for k, v in eval_result.category_scores.items()},
+                category_scores=category_scores,
                 requirement_matches=[m.model_dump() for m in eval_result.requirement_matches],
                 strengths=eval_result.strengths,
                 gaps=eval_result.gaps,

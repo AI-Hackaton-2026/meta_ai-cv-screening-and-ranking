@@ -26,11 +26,12 @@ export function useJobs() {
   });
 }
 
-export function useJob(id) {
+export function useJob(id, options = {}) {
   return useQuery({
     queryKey: keys.job(id),
     queryFn: () => jobsApi.get(id),
     enabled: !!id,
+    ...options,
   });
 }
 
@@ -108,6 +109,18 @@ export function useRescore(candidateId) {
     mutationFn: () => candidatesApi.rescore(candidateId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.candidate(candidateId) });
+    },
+  });
+}
+
+export function useRescoreForJob(jobId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (candidateId) => candidatesApi.rescore(candidateId),
+    onSuccess: (_, candidateId) => {
+      qc.invalidateQueries({ queryKey: keys.candidate(candidateId) });
+      qc.invalidateQueries({ queryKey: keys.leaderboard(jobId) });
+      qc.invalidateQueries({ queryKey: keys.batchStatus(jobId) });
     },
   });
 }
