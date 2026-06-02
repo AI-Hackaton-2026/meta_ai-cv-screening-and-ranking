@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ScoreBar } from "@/components/ScoreBar";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useCandidate, useJob, useRescore } from "@/lib/queries";
+import { useCandidate, useJob, useRescoreForJob } from "@/lib/queries";
 import { candidatesApi } from "@/lib/api";
 import { formatScore, recommendationLabel } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ export default function CandidatePage() {
   const navigate = useNavigate();
   const { data: candidate, isLoading } = useCandidate(candidateId);
   const { data: job } = useJob(candidate?.job_id);
-  const { mutateAsync: rescore, isPending: rescoring } = useRescore(candidateId);
+  const { mutateAsync: rescore, isPending: rescoring } = useRescoreForJob(candidate?.job_id);
 
   const evaluation = candidate?.evaluation;
 
@@ -83,9 +83,12 @@ export default function CandidatePage() {
   };
 
   const handleRescore = async () => {
+    if (!candidate?.job_id) return;
+
     try {
-      await rescore();
+      await rescore(candidateId);
       toast.success("Rescore queued. Results will update shortly.");
+      navigate(`/jobs/${candidate.job_id}`, { replace: true });
     } catch {
       toast.error("Rescore failed.");
     }
