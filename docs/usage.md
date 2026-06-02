@@ -101,6 +101,11 @@ This is useful for roles where, for example, domain expertise matters much more 
 
 ## 7. Export
 
+### CV Preview
+
+In the candidate drilldown, click **Preview CV** to review the original PDF inline. DOCX
+uploads show their extracted text in the same preview panel.
+
 ### Shortlist CSV
 
 Click **Export CSV** on the Job Detail page to download all evaluated candidates ranked by score, including all category scores, recommendations, and summaries.

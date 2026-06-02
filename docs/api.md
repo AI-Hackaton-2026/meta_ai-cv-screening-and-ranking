@@ -104,6 +104,13 @@ Re-run Claude scoring for a candidate (e.g. after weight changes).
 
 ---
 
+### `GET /candidates/{id}/cv-preview`
+Preview the stored original CV. PDFs stream inline; DOCX files return extracted text.
+
+**Response 200:** Browser-friendly CV preview
+
+---
+
 ### `GET /candidates/{id}/export?format=pdf`
 Download PDF evaluation report.
 
