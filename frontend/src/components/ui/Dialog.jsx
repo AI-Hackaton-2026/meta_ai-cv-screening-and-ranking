@@ -6,7 +6,16 @@ import { X } from "lucide-react";
  * Simple accessible dialog / modal.
  * Closes on Escape key and backdrop click.
  */
-export function Dialog({ open, onClose, title, children, className, size = "md" }) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  className,
+  bodyClassName,
+  size = "md",
+  style,
+}) {
   const overlayRef = useRef(null);
 
   useEffect(() => {
@@ -39,7 +48,13 @@ export function Dialog({ open, onClose, title, children, className, size = "md" 
           maxW,
           className
         )}
-        style={{ maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-modal)", animation: "mh-pop var(--dur-med) var(--ease-out)" }}
+        style={{
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxShadow: "var(--shadow-modal)",
+          animation: "mh-pop var(--dur-med) var(--ease-out)",
+          ...style,
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border)]">
@@ -52,7 +67,7 @@ export function Dialog({ open, onClose, title, children, className, size = "md" 
           </button>
         </div>
         {/* Body */}
-        <div className="px-6 py-5">{children}</div>
+        <div className={cn("px-6 py-5", bodyClassName)}>{children}</div>
       </div>
     </div>
   );

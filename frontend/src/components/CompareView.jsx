@@ -1,9 +1,11 @@
-import { useCandidate } from "@/lib/queries";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
+import { CheckCircle2, MinusCircle, XCircle } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { ScoreBar } from "@/components/ScoreBar";
-import { Badge } from "@/components/ui/Badge";
-import { formatScore, recommendationLabel } from "@/lib/utils";
-import { CheckCircle2, MinusCircle, XCircle } from "lucide-react";
+import { keys } from "@/lib/queries";
+import { candidatesApi } from "@/lib/api";
+import { cn, formatScore } from "@/lib/utils";
 
 const CATEGORY_LABELS = {
   skills: "Skills",
@@ -12,97 +14,252 @@ const CATEGORY_LABELS = {
   domain_fit: "Domain Fit",
 };
 
-const REQ_ICONS = {
-  met: <CheckCircle2 size={12} className="req-met shrink-0" />,
-  partial: <MinusCircle size={12} className="req-partial shrink-0" />,
-  unmet: <XCircle size={12} className="req-unmet shrink-0" />,
+const CATEGORIES = ["skills", "experience", "education", "domain_fit"];
+
+const STATUS_META = {
+  met: { label: "Met", Icon: CheckCircle2, className: "mh-compare-status--met" },
+  partial: { label: "Partial", Icon: MinusCircle, className: "mh-compare-status--partial" },
+  unmet: { label: "Unmet", Icon: XCircle, className: "mh-compare-status--unmet" },
 };
 
-function CandidateColumn({ candidateId }) {
-  const { data, isLoading } = useCandidate(candidateId);
+function sortRequirements(requirements) {
+  const order = { must_have: 0, nice_to_have: 1 };
+  return [...requirements].sort((a, b) => {
+    const ka = order[a.kind] ?? 2;
+    const kb = order[b.kind] ?? 2;
+    if (ka !== kb) return ka - kb;
+    return a.id - b.id;
+  });
+}
 
-  if (isLoading) return (
-    <div className="flex-1 flex items-center justify-center py-12">
-      <span className="w-5 h-5 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+function buildMatchMap(matches) {
+  return Object.fromEntries((matches ?? []).map((m) => [m.requirement_id, m]));
+}
 
-  const ev = data?.evaluation;
+function SummaryCell({ summary }) {
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const textRef = useRef(null);
+  const text = summary?.trim();
+
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el || expanded) return;
+    setTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, [text, expanded]);
+
+  if (!text) {
+    return <p className="mh-compare-summary__text">—</p>;
+  }
+
+  const showToggle = truncated || expanded;
 
   return (
-    <div className="flex-1 min-w-0">
-      {/* Header */}
-      <div className="mb-4 pb-3 border-b border-[var(--color-border)]">
-        <p className="text-sm font-semibold text-[var(--color-ink)] truncate">{data?.name}</p>
-        <p className="text-xs text-[var(--color-ink-muted)] truncate">{data?.original_filename}</p>
-      </div>
-
-      {!ev ? (
-        <p className="text-xs text-[var(--color-ink-muted)]">No evaluation yet.</p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {/* Overall */}
-          <div className="p-3 rounded-[var(--radius-md)] bg-[var(--color-primary-light)] text-center">
-            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--color-primary)" }}>
-              {formatScore(ev.overall_score)}
-            </p>
-            <Badge variant={ev.recommendation} className="mt-1">
-              {recommendationLabel(ev.recommendation)}
-            </Badge>
-          </div>
-
-          {/* Category scores */}
-          <div className="flex flex-col gap-2">
-            {Object.entries(ev.category_scores ?? {}).map(([key, val]) => (
-              <div key={key}>
-                <div className="flex justify-between text-xs mb-0.5">
-                  <span className="text-[var(--color-ink-muted)]">{CATEGORY_LABELS[key] ?? key}</span>
-                </div>
-                <ScoreBar score={val?.score} />
-              </div>
-            ))}
-          </div>
-
-          {/* Requirement matches */}
-          {ev.requirement_matches?.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide">
-                Requirements
-              </p>
-              {ev.requirement_matches.map((m, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  {REQ_ICONS[m.status] ?? REQ_ICONS.unmet}
-                  <span className="text-xs text-[var(--color-ink)] truncate">
-                    Req #{m.requirement_id}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Summary */}
-          <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">{ev.summary}</p>
-        </div>
+    <div className={cn("mh-compare-summary", expanded && "is-expanded")}>
+      <p ref={textRef} className="mh-compare-summary__text">
+        {text}
+      </p>
+      {showToggle && (
+        <button
+          type="button"
+          className="mh-compare-summary__toggle"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "Read less" : "Read more"}
+        </button>
       )}
     </div>
   );
 }
 
-export function CompareView({ candidateIds, onClose }) {
+function ReqStatusCell({ match }) {
+  if (!match) {
+    return <span className="mh-compare-status mh-compare-status--empty">—</span>;
+  }
+
+  const meta = STATUS_META[match.status] ?? STATUS_META.unmet;
+  const { Icon, label, className } = meta;
+  const hasEvidence = match.evidence && match.evidence !== "Not found";
+
+  return (
+    <div className={`mh-compare-status ${className}`}>
+      <span className="mh-compare-status__head">
+        <Icon size={14} aria-hidden />
+        <span>{label}</span>
+      </span>
+      {hasEvidence && (
+        <p className="mh-compare-status__evidence" title={match.evidence}>
+          &ldquo;{match.evidence}&rdquo;
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Shared column grid: label + N equal candidate columns */
+function CompareRow({ children, className }) {
+  return <div className={cn("mh-compare-row", className)}>{children}</div>;
+}
+
+function CompareLabel({ children, className, hidden }) {
+  return (
+    <div
+      className={cn("mh-compare-cell mh-compare-cell--label", className)}
+      aria-hidden={hidden || undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CompareCol({ children, className }) {
+  return <div className={cn("mh-compare-cell mh-compare-cell--data", className)}>{children}</div>;
+}
+
+function SectionTitle({ children }) {
+  return <h3 className="mh-compare-block__title">{children}</h3>;
+}
+
+export function CompareView({ candidateIds, requirements = [], onClose }) {
+  const queries = useQueries({
+    queries: (candidateIds ?? []).map((id) => ({
+      queryKey: keys.candidate(id),
+      queryFn: () => candidatesApi.get(id),
+      enabled: !!id,
+    })),
+  });
+
   if (!candidateIds?.length) return null;
+
+  const isLoading = queries.some((q) => q.isLoading);
+  const candidates = queries.map((q) => q.data).filter(Boolean);
+  const colCount = candidates.length;
+  const sortedReqs = sortRequirements(requirements);
+  const layoutStyle = { "--mh-compare-cols": colCount || candidateIds.length };
 
   return (
     <Dialog
       open={candidateIds.length > 0}
       onClose={onClose}
-      title={`Compare ${candidateIds.length} Candidates`}
+      title={`Compare ${candidateIds.length} candidates`}
       size="full"
+      className="mh-compare-dialog"
+      bodyClassName="mh-compare-body"
+      style={layoutStyle}
     >
-      <div className="flex gap-6 overflow-x-auto pb-2">
-        {candidateIds.map((id) => (
-          <CandidateColumn key={id} candidateId={id} />
-        ))}
-      </div>
+      {isLoading && (
+        <div className="mh-compare-loading">
+          <span className="mh-spinner" />
+          <span className="text-sm text-[var(--muted-foreground)]">Loading evaluations…</span>
+        </div>
+      )}
+
+      {!isLoading && colCount > 0 && (
+        <div className="mh-compare-layout" style={layoutStyle}>
+          {/* Hero */}
+          <section className="mh-compare-block mh-compare-block--hero">
+            <CompareRow className="mh-compare-row--hero">
+              {candidates.map((c) => {
+                const ev = c.evaluation;
+                return (
+                  <CompareCol key={c.id}>
+                    <article className="mh-compare-hero">
+                      <p className="mh-compare-hero__name">{c.name}</p>
+                      {ev ? (
+                        <p className="mh-compare-hero__score mono">
+                          {formatScore(ev.overall_score)}
+                        </p>
+                      ) : (
+                        <p className="mh-compare-hero__pending">No evaluation yet</p>
+                      )}
+                    </article>
+                  </CompareCol>
+                );
+              })}
+            </CompareRow>
+          </section>
+
+          {/* Category scores */}
+          <section className="mh-compare-block">
+            <SectionTitle>Category scores</SectionTitle>
+            <div className="mh-compare-block__body">
+              {CATEGORIES.map((cat) => (
+                <CompareRow key={cat}>
+                  <CompareLabel>{CATEGORY_LABELS[cat]}</CompareLabel>
+                  {candidates.map((c) => {
+                    const score = c.evaluation?.category_scores?.[cat]?.score;
+                    return (
+                      <CompareCol key={c.id}>
+                        <ScoreBar score={score} height={5} />
+                      </CompareCol>
+                    );
+                  })}
+                </CompareRow>
+              ))}
+            </div>
+          </section>
+
+          {/* Recruiter summary (above requirements) */}
+          <section className="mh-compare-block">
+            <SectionTitle>Recruiter summary</SectionTitle>
+            <div className="mh-compare-block__body">
+              <CompareRow>
+                <CompareLabel>Summary</CompareLabel>
+                {candidates.map((c) => (
+                  <CompareCol key={c.id}>
+                    <SummaryCell summary={c.evaluation?.summary} />
+                  </CompareCol>
+                ))}
+              </CompareRow>
+            </div>
+          </section>
+
+          {/* Requirements — own scroll region */}
+          {sortedReqs.length > 0 && (
+            <section className="mh-compare-block mh-compare-block--reqs">
+              <div className="mh-compare-block__title-row">
+                <SectionTitle>Requirements</SectionTitle>
+                <div className="mh-compare-legend" aria-hidden>
+                  {Object.values(STATUS_META).map(({ label, Icon, className }) => (
+                    <span key={label} className={`mh-compare-legend__item ${className}`}>
+                      <Icon size={12} />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="mh-compare-reqs-scroll">
+                <div className="mh-compare-block__body">
+                  {sortedReqs.map((req) => (
+                    <CompareRow key={req.id} className="mh-compare-row--req">
+                      <CompareLabel className="mh-compare-req">
+                        <span
+                          className={`mh-compare-req-kind ${
+                            req.kind === "must_have"
+                              ? "mh-compare-req-kind--must"
+                              : "mh-compare-req-kind--nice"
+                          }`}
+                        >
+                          {req.kind === "must_have" ? "Must-have" : "Nice-to-have"}
+                        </span>
+                        <span className="mh-compare-req-text">{req.text}</span>
+                      </CompareLabel>
+                      {candidates.map((c) => {
+                        const matchMap = buildMatchMap(c.evaluation?.requirement_matches);
+                        return (
+                          <CompareCol key={c.id}>
+                            <ReqStatusCell match={matchMap[req.id]} />
+                          </CompareCol>
+                        );
+                      })}
+                    </CompareRow>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </Dialog>
   );
 }
