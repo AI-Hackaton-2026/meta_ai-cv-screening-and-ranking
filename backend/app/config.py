@@ -23,9 +23,18 @@ class Settings(BaseSettings):
     # CORS — comma-separated list of allowed origins
     cors_origins: str = "http://localhost:5173"
 
+    # Supabase Storage — optional locally; required to persist original CV files remotely
+    supabase_url: str | None = None
+    supabase_service_role_key: str | None = None
+    supabase_storage_bucket: str = "cvs"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",")]
+
+    @property
+    def supabase_storage_enabled(self) -> bool:
+        return bool(self.supabase_url and self.supabase_service_role_key)
 
 
 # Single shared instance imported everywhere

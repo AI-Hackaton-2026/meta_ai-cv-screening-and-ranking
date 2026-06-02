@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.db import AsyncSessionLocal, get_session
 from app.models import Candidate, Job, Requirement
 from app.schemas import (
@@ -27,6 +28,7 @@ from app.schemas import (
 from app.services.export import generate_shortlist_csv
 from app.services.parsing import ParsingError, extract_text
 from app.services.scoring import process_job_candidates
+from app.services.storage import StorageError, delete_cvs, upload_cv
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -189,6 +191,18 @@ async def delete_job(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     job = await _get_job_or_404(job_id, session)
+    result = await session.execute(select(Candidate.storage_path).where(Candidate.job_id == job_id))
+    storage_paths = [path for path in result.scalars().all() if path]
+
+    if storage_paths:
+        try:
+            await delete_cvs(storage_paths)
+        except StorageError:
+            logger.exception("Could not delete stored CVs for job %s", job_id)
+            raise HTTPException(
+                status_code=502, detail="Could not delete CV files from Supabase Storage"
+            ) from None
+
     await session.delete(job)
     await session.commit()
 
@@ -213,38 +227,65 @@ async def upload_candidates(
 
     candidate_ids: list[int] = []
     errors: list[dict] = []
+    uploaded_paths: list[str] = []
 
-    for file in files:
-        content = await file.read()
-        filename = file.filename or "upload"
+    try:
+        for file in files:
+            content = await file.read()
+            filename = file.filename or "upload"
 
-        try:
-            text = extract_text(filename, content)
-        except ParsingError as e:
-            errors.append({"filename": filename, "error": str(e)})
-            continue
+            try:
+                text = extract_text(filename, content)
+            except ParsingError as e:
+                errors.append({"filename": filename, "error": str(e)})
+                continue
 
-        # Use filename stem as initial name; Claude will extract the real name during scoring
-        name = Path(filename).stem.replace("_", " ").replace("-", " ").title()
+            storage_path = None
+            if settings.supabase_storage_enabled:
+                try:
+                    storage_path = await upload_cv(
+                        job_id,
+                        filename,
+                        content,
+                        file.content_type or "application/octet-stream",
+                    )
+                    uploaded_paths.append(storage_path)
+                except StorageError as e:
+                    errors.append({"filename": filename, "error": str(e)})
+                    continue
 
-        candidate = Candidate(
-            job_id=job_id,
-            name=name,
-            original_filename=filename,
-            raw_text=text,
-            status="pending",
-        )
-        session.add(candidate)
-        await session.flush()  # get the ID before background task
-        candidate_ids.append(candidate.id)
+            # Use filename stem as initial name; Claude will extract the real name during scoring
+            name = Path(filename).stem.replace("_", " ").replace("-", " ").title()
 
-    await session.commit()
+            candidate = Candidate(
+                job_id=job_id,
+                name=name,
+                original_filename=filename,
+                storage_path=storage_path,
+                raw_text=text,
+                status="pending",
+            )
+            session.add(candidate)
+            await session.flush()  # get the ID before background task
+            candidate_ids.append(candidate.id)
+
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        if uploaded_paths:
+            try:
+                await delete_cvs(uploaded_paths)
+            except StorageError:
+                logger.exception("Could not clean up CVs after database upload failure")
+        raise
 
     if candidate_ids:
         asyncio.create_task(process_job_candidates(candidate_ids, AsyncSessionLocal))
 
     return {
         "queued": len(candidate_ids),
+        "stored": len(uploaded_paths),
+        "storage_enabled": settings.supabase_storage_enabled,
         "candidate_ids": candidate_ids,
         "errors": errors,
     }

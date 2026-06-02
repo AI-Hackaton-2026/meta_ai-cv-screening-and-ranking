@@ -88,6 +88,7 @@ class Candidate(Base):
     # Extracted from CV by Claude (first pass); falls back to filename stem
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    storage_path: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Full CV text extracted from the uploaded file (not returned in list responses)
     raw_text: Mapped[str] = mapped_column(Text, nullable=False)

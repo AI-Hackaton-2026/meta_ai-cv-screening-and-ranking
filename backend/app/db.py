@@ -28,6 +28,12 @@ async def create_tables() -> None:
     """Create all tables on startup. Called from app lifespan."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        columns = await conn.exec_driver_sql("PRAGMA table_info(candidates)")
+        candidate_columns = columns.fetchall()
+        if candidate_columns and "storage_path" not in {row[1] for row in candidate_columns}:
+            await conn.exec_driver_sql(
+                "ALTER TABLE candidates ADD COLUMN storage_path VARCHAR(1000)"
+            )
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
