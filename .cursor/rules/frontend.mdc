@@ -1,0 +1,40 @@
+---
+description: Frontend React/JS conventions for MetaHire
+globs: ["frontend/src/**/*.{js,jsx,css}"]
+---
+
+# Frontend Conventions
+
+## Language & Style
+- React 19 + Vite 6, JavaScript (JSX) — no TypeScript
+- Tailwind v4 utility classes; prefer semantic token names over raw values
+- shadcn/ui components from `@/components/ui/` — never modify installed components directly; wrap them
+- All paths aliased through `@/` → `src/`
+- `async/await` everywhere; no `.then()` chains
+- No `console.log` in committed code
+
+## Component rules
+- One component per file; filename matches the component name (`JobCard.jsx`)
+- Pages live in `src/pages/`, reusable components in `src/components/`
+- Shared UI primitives (shadcn copies) live in `src/components/ui/`
+- Keep pages thin — data fetching via TanStack Query hooks in `src/lib/queries.js`
+
+## Data fetching
+- All API calls go through `src/lib/api.js` (axios instance); never call `fetch` directly
+- Use `useQuery` / `useMutation` from `@tanstack/react-query` for all server state
+- Leaderboard and batch status polls use `refetchInterval` on the query
+
+## Styling
+- Brand tokens live in `src/styles/tokens.css` (imported in `main.css`)
+- Use `cn()` from `@/lib/utils` for conditional class merging
+- Never use inline `style={{}}` except for dynamic/computed values (e.g. score bar widths)
+
+## Commands
+```bash
+cd frontend
+npm install      # install deps
+npm run dev      # start dev server (default :5173)
+npm run build    # production build
+npm run lint     # eslint
+npm run preview  # preview production build
+```

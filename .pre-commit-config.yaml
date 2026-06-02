@@ -1,0 +1,42 @@
+repos:
+  # Python: ruff (lint + format)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  # General hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+        exclude: ^(frontend/node_modules|\.vscode)
+      - id: end-of-file-fixer
+        exclude: ^frontend/node_modules
+      - id: trailing-whitespace
+        exclude: ^frontend/node_modules
+      - id: detect-private-key
+
+  # Frontend: prettier + eslint run as local hooks
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        language: node
+        entry: bash -c 'cd frontend && npx prettier --write --ignore-unknown "$@"' --
+        types_or: [javascript, jsx, css, json, markdown]
+        files: ^frontend/src/
+        pass_filenames: true
+      - id: eslint
+        name: eslint
+        language: node
+        entry: bash -c 'cd frontend && npx eslint --fix "$@"' --
+        types_or: [javascript, jsx]
+        files: ^frontend/src/
+        pass_filenames: true

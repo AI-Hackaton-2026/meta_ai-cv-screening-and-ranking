@@ -1,0 +1,43 @@
+---
+description: Backend Python/FastAPI conventions for MetaHire
+globs: ["backend/**/*.py"]
+---
+
+# Backend Conventions
+
+## Language & Style
+- Python 3.12, async/await throughout — never use sync blocking I/O in async endpoints
+- All route handlers are `async def`; DB ops use `await session.execute(...)`, Claude calls are awaited
+- Use Pydantic v2 for all request/response validation and for LLM structured outputs
+- Never hardcode secrets; always read from `app.config.settings`
+- No `print()` in application code; use `logging` or FastAPI's built-in logger
+
+## Project layout (`backend/app/`)
+- `main.py` — app factory + lifespan, no business logic
+- `config.py` — all env-based settings (pydantic-settings)
+- `db.py` — async engine/session factory, `get_session` FastAPI dependency
+- `models.py` — SQLAlchemy 2.0 models only (no logic)
+- `schemas.py` — Pydantic models only (no logic)
+- `routers/` — HTTP layer; delegate immediately to services
+- `services/` — all business logic lives here
+
+## Error handling
+- Raise `HTTPException` in routers; services raise plain Python exceptions
+- Never swallow exceptions silently; always log before re-raising
+- Claude service must handle `anthropic.APIError` and bubble up a descriptive message
+
+## Database
+- Async SQLAlchemy 2.0 — `AsyncSession`, `AsyncEngine`, `select()` style
+- Pass `AsyncSession` via `Depends(get_session)` — never import session globally
+- Use `await session.commit()` and `await session.refresh(obj)` after writes
+
+## Commands
+```bash
+cd backend
+uv sync                  # install deps
+uv run uvicorn app.main:app --reload --port 8000
+uv run ruff check .      # lint
+uv run ruff format .     # format
+uv run pyright           # type check
+uv run python -m app.seed  # load sample data
+```

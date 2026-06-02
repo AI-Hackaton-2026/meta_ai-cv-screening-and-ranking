@@ -1,0 +1,72 @@
+/*
+ * MetaHire Design Tokens — Symphony.is brand
+ * Source: extracted from symphony.is (June 2026)
+ *
+ * These variables are the single source of truth for the brand.
+ * The FE developer can update values here and they propagate everywhere.
+ *
+ * Primary violet:  #726BFF  (rgb 114,107,255)
+ * Accent sky:      #33BBFF
+ * Accent magenta:  #C44DFF
+ * Ink/text:        #282C34
+ * Canvas:          #FAFAFA
+ * Card:            #FFFFFF
+ * Border:          #D9D9D9
+ * Font:            Poppins
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* ── Brand colours ──────────────────────────────────────────────── */
+  --color-primary: #726bff;
+  --color-primary-hover: #5f57f0;
+  --color-primary-light: rgba(114, 107, 255, 0.1);
+  --color-primary-medium: rgba(114, 107, 255, 0.2);
+
+  --color-accent-sky: #33bbff;
+  --color-accent-magenta: #c44dff;
+
+  /* ── Text / Ink ─────────────────────────────────────────────────── */
+  --color-ink: #282c34;
+  --color-ink-muted: rgba(40, 44, 52, 0.6);
+  --color-ink-subtle: rgba(40, 44, 52, 0.4);
+
+  /* ── Surfaces ───────────────────────────────────────────────────── */
+  --color-canvas: #fafafa;
+  --color-card: #ffffff;
+  --color-card-hover: #f5f4ff;
+
+  /* ── Borders ────────────────────────────────────────────────────── */
+  --color-border: #d9d9d9;
+  --color-border-focus: var(--color-primary);
+
+  /* ── Status / Recommendation ────────────────────────────────────── */
+  --color-advance-bg: #d1fae5;
+  --color-advance-text: #065f46;
+  --color-hold-bg: #fef3c7;
+  --color-hold-text: #92400e;
+  --color-reject-bg: #fee2e2;
+  --color-reject-text: #991b1b;
+
+  /* ── Chart palette ──────────────────────────────────────────────── */
+  --color-chart-1: var(--color-primary);
+  --color-chart-2: var(--color-accent-sky);
+  --color-chart-3: var(--color-accent-magenta);
+  --color-chart-4: #fbbf24;
+  --color-chart-5: #34d399;
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-sans: "Poppins", -apple-system, "system-ui", "Segoe UI", Roboto, sans-serif;
+
+  /* ── Spacing / Radius ───────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* ── Shadows ────────────────────────────────────────────────────── */
+  --shadow-card: 0 1px 3px rgba(40, 44, 52, 0.08), 0 4px 12px rgba(40, 44, 52, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(114, 107, 255, 0.12), 0 1px 4px rgba(40, 44, 52, 0.08);
+  --shadow-modal: 0 20px 60px rgba(40, 44, 52, 0.2);
+}

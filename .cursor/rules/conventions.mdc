@@ -1,0 +1,26 @@
+---
+description: Project-wide conventions for MetaHire (commits, branches, env, security)
+globs: ["**/*"]
+---
+
+# Project Conventions
+
+## Git workflow
+- Never commit directly to `main`; use feature branches (`feature/`, `fix/`, `chore/`)
+- PR titles follow Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`
+- Squash-merge PRs
+
+## Environment & Secrets
+- Secrets are ONLY in `backend/.env` (gitignored)
+- The committed template is `backend/.env.example` — no real values ever
+- `ANTHROPIC_API_KEY` is required; app fails fast with a clear message if missing
+
+## Code comments
+- Comments explain *why*, not *what*
+- No redundant comments like `# Import X` or `# Return result`
+- Prompt strings in `app/services/claude.py` should have a short header comment explaining the intent
+
+## File naming
+- Python: `snake_case.py`
+- React: `PascalCase.jsx` for components, `camelCase.js` for utilities
+- Docs: `kebab-case.md`
