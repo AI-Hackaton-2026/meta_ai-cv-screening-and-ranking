@@ -6,7 +6,7 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,6 +16,7 @@ from app.models import Candidate, Evaluation
 from app.schemas import CandidateOut, CategoryScoreOut, EvaluationOut, RequirementMatchOut
 from app.services.export import generate_candidate_pdf
 from app.services.scoring import score_candidate
+from app.services.storage import StorageError, delete_cvs, download_cv
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/candidates", tags=["candidates"])
@@ -74,6 +75,7 @@ async def get_candidate(
         job_id=candidate.job_id,
         name=candidate.name,
         original_filename=candidate.original_filename,
+        has_cv_preview=bool(candidate.storage_path),
         status=candidate.status,
         error=candidate.error,
         uploaded_at=candidate.uploaded_at,
@@ -89,6 +91,15 @@ async def delete_candidate(
     candidate = await session.get(Candidate, candidate_id)
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
+
+    if candidate.storage_path:
+        try:
+            await delete_cvs([candidate.storage_path])
+        except StorageError:
+            logger.exception("Could not delete stored CV for candidate %s", candidate_id)
+            raise HTTPException(
+                status_code=502, detail="Could not delete CV file from Supabase Storage"
+            ) from None
 
     await session.delete(candidate)
     await session.commit()
@@ -117,6 +128,36 @@ async def rescore_candidate(
     asyncio.create_task(score_candidate(candidate_id, AsyncSessionLocal))
 
     return {"message": "Rescore queued", "candidate_id": candidate_id}
+
+
+@router.get("/{candidate_id}/cv-preview")
+async def preview_candidate_cv(
+    candidate_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> Response:
+    """Return a browser-friendly preview without exposing private Storage credentials."""
+    candidate = await session.get(Candidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    if not candidate.storage_path:
+        raise HTTPException(status_code=404, detail="Original CV file is not available")
+
+    if candidate.original_filename.lower().endswith(".docx"):
+        return PlainTextResponse(candidate.raw_text)
+
+    try:
+        content, content_type = await download_cv(candidate.storage_path)
+    except StorageError:
+        logger.exception("Could not load stored CV for candidate %s", candidate_id)
+        raise HTTPException(
+            status_code=502, detail="Could not load CV file from Supabase Storage"
+        ) from None
+
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"Content-Disposition": 'inline; filename="candidate-cv.pdf"'},
+    )
 
 
 @router.get("/{candidate_id}/export")

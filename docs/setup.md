@@ -32,6 +32,24 @@ ANTHROPIC_API_KEY=sk-ant-your-key-here
 
 The other variables have sensible defaults for local development.
 
+### Supabase Storage for CV uploads
+
+To persist original CV files in Supabase:
+
+1. Create a private Storage bucket named `cvs` in your Supabase project.
+2. Open **Project Settings → API** and add the project URL and service-role key to
+   `backend/.env`:
+
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_STORAGE_BUCKET=cvs
+```
+
+Keep the service-role key in the backend only. The React app uploads CVs to FastAPI,
+which parses each file and stores the original in the private bucket at
+`jobs/{job_id}/{generated_id}.{extension}`.
+
 ```bash
 # 3. Start the server
 uv run uvicorn app.main:app --reload --port 8000

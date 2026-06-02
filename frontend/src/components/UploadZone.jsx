@@ -35,11 +35,15 @@ export function UploadZone({ jobId, onUploaded }) {
       const queued = result.queued ?? 0;
       const errors = result.errors ?? [];
       if (queued > 0) toast.success(`${queued} CV${queued > 1 ? "s" : ""} queued for scoring`);
-      if (errors.length > 0) toast.error(`${errors.length} file(s) failed to parse`);
+      if (errors.length > 0) {
+        const firstError = errors[0];
+        const suffix = errors.length > 1 ? ` (+${errors.length - 1} more)` : "";
+        toast.error(`${firstError.filename}: ${firstError.error}${suffix}`);
+      }
       setFiles([]);
       onUploaded?.();
-    } catch {
-      toast.error("Upload failed. Check backend connection.");
+    } catch (error) {
+      toast.error(error.response?.data?.detail ?? "Upload failed. Check backend connection.");
     }
   };
 

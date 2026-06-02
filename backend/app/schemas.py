@@ -104,6 +104,7 @@ class CandidateOut(BaseModel):
     job_id: int
     name: str
     original_filename: str
+    has_cv_preview: bool = False
     status: str
     error: str | None
     uploaded_at: datetime
