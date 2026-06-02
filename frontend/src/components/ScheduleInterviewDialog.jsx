@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 
 const DURATIONS = [30, 45, 60, 90];
 
-export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, onSend }) {
+export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, onSend, sending }) {
   const timezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     []
@@ -51,12 +51,13 @@ export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, on
     form.date &&
     form.time &&
     form.location.trim() &&
+    form.message.trim() &&
     (form.format !== "online" || isValidUrl(form.location));
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!isValid) return;
-    onSend?.({ ...form, timezone });
+    if (!isValid || sending) return;
+    await onSend?.({ ...form, timezone });
   };
 
   return (
@@ -198,11 +199,11 @@ export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, on
           />
 
           <div className="mh-modal-foot">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={sending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!isValid}>
-              <Send size={15} />
+            <Button type="submit" disabled={!isValid || sending} loading={sending}>
+              {!sending && <Send size={15} />}
               Send invitation
             </Button>
           </div>

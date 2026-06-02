@@ -4,6 +4,9 @@ Candidates router: detail view, rescore, per-candidate PDF export.
 
 import asyncio
 import logging
+from datetime import UTC, datetime
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse, Response
@@ -13,7 +16,15 @@ from sqlalchemy.orm import selectinload
 
 from app.db import AsyncSessionLocal, get_session
 from app.models import Candidate, Evaluation
-from app.schemas import CandidateOut, CategoryScoreOut, EvaluationOut, RequirementMatchOut
+from app.schemas import (
+    CandidateOut,
+    CategoryScoreOut,
+    EvaluationOut,
+    InterviewInviteCreate,
+    InterviewInviteOut,
+    RequirementMatchOut,
+)
+from app.services.email import EmailError, EmailNotConfiguredError, send_interview_invitation
 from app.services.export import generate_candidate_pdf
 from app.services.scoring import score_candidate
 from app.services.storage import StorageError, delete_cvs, download_cv
@@ -106,6 +117,53 @@ async def delete_candidate(
     await session.commit()
 
 
+@router.post("/{candidate_id}/interviews", response_model=InterviewInviteOut)
+async def send_interview_invite(
+    candidate_id: int,
+    body: InterviewInviteCreate,
+    session: AsyncSession = Depends(get_session),
+) -> InterviewInviteOut:
+    result = await session.execute(
+        select(Candidate)
+        .options(selectinload(Candidate.job))
+        .where(Candidate.id == candidate_id)
+    )
+    candidate = result.scalar_one_or_none()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    if body.format == "online" and not _is_http_url(body.location):
+        raise HTTPException(status_code=422, detail="Online interviews require a valid link")
+
+    try:
+        scheduled_at = datetime.combine(body.date, body.time, tzinfo=ZoneInfo(body.timezone))
+    except ZoneInfoNotFoundError as e:
+        raise HTTPException(status_code=422, detail=f"Unknown timezone: {body.timezone}") from e
+
+    if scheduled_at.astimezone(UTC) < datetime.now(UTC):
+        raise HTTPException(status_code=422, detail="Interview time must be in the future")
+
+    try:
+        sent = await send_interview_invitation(candidate, candidate.job, body)
+    except EmailNotConfiguredError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except EmailError as e:
+        logger.exception("Could not send interview invitation for candidate %s", candidate_id)
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    candidate.email = body.email
+    await session.commit()
+
+    return InterviewInviteOut(
+        message="Interview invitation sent",
+        provider_message_id=sent.provider_message_id,
+        candidate_id=candidate.id,
+        email=body.email,
+    )
+
+
 @router.post("/{candidate_id}/rescore", status_code=202)
 async def rescore_candidate(
     candidate_id: int,
@@ -129,6 +187,11 @@ async def rescore_candidate(
     asyncio.create_task(score_candidate(candidate_id, AsyncSessionLocal))
 
     return {"message": "Rescore queued", "candidate_id": candidate_id}
+
+
+def _is_http_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
 @router.get("/{candidate_id}/cv-preview")

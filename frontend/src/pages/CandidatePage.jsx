@@ -27,7 +27,7 @@ import { Card } from "@/components/ui/Card";
 import { ScoreBar } from "@/components/ScoreBar";
 import { ScheduleInterviewDialog } from "@/components/ScheduleInterviewDialog";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useCandidate, useJob, useRescoreForJob } from "@/lib/queries";
+import { useCandidate, useJob, useRescoreForJob, useScheduleInterview } from "@/lib/queries";
 import { candidatesApi } from "@/lib/api";
 import { formatScore, recommendationLabel } from "@/lib/utils";
 
@@ -67,6 +67,8 @@ export default function CandidatePage() {
   const { data: candidate, isLoading } = useCandidate(candidateId);
   const { data: job } = useJob(candidate?.job_id);
   const { mutateAsync: rescore, isPending: rescoring } = useRescoreForJob(candidate?.job_id);
+  const { mutateAsync: scheduleInterview, isPending: schedulingInterview } =
+    useScheduleInterview(candidateId);
   const [showCvPreview, setShowCvPreview] = useState(false);
   const [showInterviewDialog, setShowInterviewDialog] = useState(false);
 
@@ -99,9 +101,15 @@ export default function CandidatePage() {
     }
   };
 
-  const handleSendInvitation = () => {
-    setShowInterviewDialog(false);
-    toast.success("Interview invitation prepared for sending.");
+  const handleSendInvitation = async (payload) => {
+    try {
+      const result = await scheduleInterview(payload);
+      setShowInterviewDialog(false);
+      toast.success(`Interview invitation sent. Provider id: ${result.provider_message_id}`);
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      toast.error(detail || "Failed to send interview invitation.");
+    }
   };
 
   if (isLoading) {
@@ -181,6 +189,7 @@ export default function CandidatePage() {
         jobTitle={job?.title}
         onClose={() => setShowInterviewDialog(false)}
         onSend={handleSendInvitation}
+        sending={schedulingInterview}
       />
 
       {showCvPreview && candidate.has_cv_preview && (

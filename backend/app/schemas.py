@@ -7,9 +7,10 @@ Keep these in sync: if you change an LLM output schema you must also
 update the corresponding response schema and the prompt in claude.py.
 """
 
-from datetime import datetime
+from datetime import date, datetime, time
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ── Weights ───────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,51 @@ class BatchStatusOut(BaseModel):
     processing: int
     done: int
     error: int
+
+
+class InterviewInviteCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=320)
+    date: date
+    time: time
+    timezone: str = Field(..., min_length=1, max_length=100)
+    duration: int = Field(45, ge=15, le=240)
+    format: Literal["online", "in_person"]
+    location: str = Field(..., min_length=1, max_length=500)
+    interviewer: str | None = Field(None, max_length=255)
+    message: str = Field(..., min_length=1, max_length=3000)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        email = value.strip().lower()
+        if "@" not in email or "." not in email.rsplit("@", maxsplit=1)[-1]:
+            raise ValueError("Enter a valid email address")
+        return email
+
+    @field_validator("location")
+    @classmethod
+    def clean_location(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("interviewer")
+    @classmethod
+    def clean_interviewer(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("message")
+    @classmethod
+    def clean_message(cls, value: str) -> str:
+        return value.strip()
+
+
+class InterviewInviteOut(BaseModel):
+    message: str
+    provider_message_id: str
+    candidate_id: int
+    email: str
 
 
 # ── LLM structured output models (passed to output_format=) ──────────────────
