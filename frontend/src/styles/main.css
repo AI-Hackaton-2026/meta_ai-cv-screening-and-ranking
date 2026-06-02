@@ -910,7 +910,6 @@ body {
 
 .mh-sidebar-upload-row .mh-compact-upload {
   width: 100%;
-  flex-wrap: wrap;
 }
 
 .mh-sec-button {
@@ -1014,7 +1013,8 @@ body {
 }
 
 .mh-compact-upload {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: max-content minmax(0, 1fr) 86px 28px;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -1025,7 +1025,7 @@ body {
 }
 
 .mh-upload-count {
-  max-width: 150px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1035,6 +1035,7 @@ body {
 }
 
 .mh-upload-confirm {
+  width: 86px;
   min-width: 86px;
   padding-inline: 10px;
 }
@@ -1679,7 +1680,7 @@ body {
   }
 
   .mh-compact-upload {
-    flex-wrap: wrap;
+    grid-template-columns: max-content minmax(0, 1fr) 86px 28px;
   }
 
   .mh-batch-progress {
