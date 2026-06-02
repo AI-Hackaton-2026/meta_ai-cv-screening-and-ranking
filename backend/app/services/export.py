@@ -5,6 +5,10 @@ Export service: generate CSV shortlists and per-candidate PDF reports.
 import csv
 import io
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from reportlab.platypus.flowables import Flowable
 
 
 def generate_shortlist_csv(job: object, candidates: list) -> bytes:
@@ -128,7 +132,7 @@ def generate_candidate_pdf(candidate: object) -> bytes:
     }
     rec_color = RECOMMENDATION_COLORS.get(ev.recommendation, colors.lightgrey)
 
-    story = []
+    story: list[Flowable] = []
 
     # Header
     story.append(Paragraph("MetaHire — Candidate Evaluation Report", title_style))
@@ -169,7 +173,7 @@ def generate_candidate_pdf(candidate: object) -> bytes:
     # Category scores table
     story.append(Paragraph("Category Scores", heading2_style))
     cs = ev.category_scores or {}
-    cat_data = [["Category", "Score", "Rationale"]]
+    cat_data: list[list[object]] = [["Category", "Score", "Rationale"]]
     for cat in ["skills", "experience", "education", "domain_fit"]:
         data = cs.get(cat, {})
         score = data.get("score", "-") if isinstance(data, dict) else "-"

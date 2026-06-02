@@ -13,6 +13,7 @@ deploy. All calls are retried once on transient API errors.
 """
 
 import logging
+from typing import cast
 
 import anthropic
 
@@ -137,7 +138,7 @@ async def extract_requirements(job: object) -> ExtractionResult:
         description=job.description,  # type: ignore[attr-defined]
     )
     try:
-        result = await _call_claude(prompt, ExtractionResult)
+        result = cast(ExtractionResult, await _call_claude(prompt, ExtractionResult))
     except Exception as e:
         # Let the caller decide how to persist failure state (routers mark status=error).
         logger.exception(
@@ -178,5 +179,5 @@ async def evaluate_candidate(
         cv_text=cv_text[:12000],  # guard against huge CVs exceeding context
     )
 
-    result = await _call_claude(prompt, EvaluationResult)
-    return result  # type: ignore[return-value]
+    result = cast(EvaluationResult, await _call_claude(prompt, EvaluationResult))
+    return result

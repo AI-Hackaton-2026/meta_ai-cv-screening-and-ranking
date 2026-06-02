@@ -126,7 +126,7 @@ async def list_jobs(session: AsyncSession = Depends(get_session)) -> list[JobLis
     count_result = await session.execute(
         select(Candidate.job_id, func.count(Candidate.id)).group_by(Candidate.job_id)
     )
-    counts = dict(count_result.all())
+    counts: dict[int, int] = {job_id: int(cnt) for job_id, cnt in count_result.all()}
 
     items = []
     for job in jobs:
@@ -273,7 +273,7 @@ async def get_leaderboard(
 
     done = sorted(
         [c for c in candidates if c.status == "done" and c.evaluation],
-        key=lambda c: c.evaluation.overall_score,
+        key=lambda c: c.evaluation.overall_score if c.evaluation else 0.0,
         reverse=True,
     )
     others = [c for c in candidates if c not in done]
@@ -333,7 +333,7 @@ async def get_batch_status(
         .where(Candidate.job_id == job_id)
         .group_by(Candidate.status)
     )
-    counts = dict(result.all())
+    counts: dict[str, int] = {status: int(cnt) for status, cnt in result.all()}
     total = sum(counts.values())
 
     return BatchStatusOut(
