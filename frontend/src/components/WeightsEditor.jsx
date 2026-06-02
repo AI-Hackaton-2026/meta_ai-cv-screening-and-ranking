@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useUpdateJob } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = [
-  { key: "skills", label: "Skills" },
-  { key: "experience", label: "Experience" },
-  { key: "education", label: "Education" },
-  { key: "domain_fit", label: "Domain Fit" },
+  { key: "skills", label: "Skills", color: "var(--chart-1)" },
+  { key: "experience", label: "Experience", color: "var(--chart-2)" },
+  { key: "education", label: "Education", color: "var(--chart-3)" },
+  { key: "domain_fit", label: "Domain Fit", color: "var(--chart-4)" },
 ];
 
 const DEFAULT_WEIGHTS = { skills: 35, experience: 30, education: 20, domain_fit: 15 };
@@ -36,22 +37,41 @@ export function WeightsEditor({ jobId, currentWeights }) {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="mh-weights-editor">
+      <div className="mh-weightbar">
+        {CATEGORIES.map(({ key, color }) => (
+          <div
+            key={key}
+            style={{ width: `${local[key] ?? 0}%`, background: color }}
+          />
+        ))}
+      </div>
+
+      <div className="mh-weight-legend">
+        {CATEGORIES.map(({ key, label, color }) => (
+          <span key={key}>
+            <span style={{ background: color }} />
+            {label}
+            <strong>{local[key] ?? 0}%</strong>
+          </span>
+        ))}
+      </div>
+
+      <div className="mh-weight-controls">
         {CATEGORIES.map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-2">
-            <label className="text-xs text-[var(--color-ink-muted)] w-24 shrink-0">{label}</label>
-            <div className="flex items-center gap-1 flex-1">
+          <div key={key} className="mh-weight-row">
+            <label>{label}</label>
+            <div className="mh-weight-input">
               <input
                 type="range"
                 min={0}
                 max={100}
                 value={local[key] ?? 0}
                 onChange={(e) => handleChange(key, e.target.value)}
-                className="flex-1 accent-[var(--color-primary)]"
+                className="mh-range"
               />
               <span className={cn("text-xs font-medium tabular-nums w-8 text-right",
-                valid ? "text-[var(--color-ink)]" : "text-amber-600"
+                valid ? "text-[var(--foreground)]" : "text-amber-600"
               )}>
                 {local[key]}%
               </span>
@@ -60,13 +80,23 @@ export function WeightsEditor({ jobId, currentWeights }) {
         ))}
       </div>
 
-      <div className="flex items-center justify-between">
+      <p className="mh-weight-help">
+        Weights must add up to 100%. Adjust sliders, then save to apply the scoring split.
+      </p>
+
+      <div className="flex items-center justify-between gap-3">
         <span className={cn("text-xs font-medium", valid ? "text-[var(--color-ink-muted)]" : "text-amber-600")}>
           Total: {total}% {!valid && "(must equal 100%)"}
         </span>
-        <Button size="sm" onClick={handleSave} disabled={!valid} loading={isPending}>
-          Save Weights
-        </Button>
+        <div className="mh-row">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setLocal(weights)}>
+            Reset
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={!valid} loading={isPending}>
+            {!isPending && <Check size={14} />}
+            Save weights
+          </Button>
+        </div>
       </div>
     </div>
   );

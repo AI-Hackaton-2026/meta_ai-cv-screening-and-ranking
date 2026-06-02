@@ -1,34 +1,48 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
+  BarChart3,
+  Check,
   ChevronDown,
   ChevronUp,
   Download,
+  FileText,
   GitCompare,
-  SlidersHorizontal,
+  ListChecks,
   Loader2,
   RefreshCw,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
+  UploadCloud,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Dialog } from "@/components/ui/Dialog";
 import { ScoreBar, ScorePill } from "@/components/ScoreBar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BatchProgress } from "@/components/BatchProgress";
 import { UploadZone } from "@/components/UploadZone";
-import { CandidateDrawer } from "@/components/CandidateDrawer";
 import { CompareView } from "@/components/CompareView";
 import { WeightsEditor } from "@/components/WeightsEditor";
-import { useJob, useLeaderboard, useBatchStatus, useRescoreForJob } from "@/lib/queries";
+import {
+  useBatchStatus,
+  useDeleteCandidateForJob,
+  useJob,
+  useLeaderboard,
+  useRescoreForJob,
+} from "@/lib/queries";
 import { jobsApi } from "@/lib/api";
-import { recommendationClass, recommendationLabel } from "@/lib/utils";
 
 const CATEGORIES = ["skills", "experience", "education", "domain_fit"];
 const CAT_LABEL = { skills: "Skills", experience: "Exp.", education: "Edu.", domain_fit: "Domain" };
 
 export default function JobDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const jobId = Number(id);
 
   const { data: job, isLoading: jobLoading } = useJob(jobId, {
@@ -42,7 +56,6 @@ export default function JobDetailPage() {
   });
   const { data: statusData } = useBatchStatus(jobId, { refetchInterval: 3000 });
 
-  // Poll leaderboard while any candidates are active
   const hasActive = statusData ? statusData.pending + statusData.processing > 0 : false;
   const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(jobId, {
     refetchInterval: (query) => {
@@ -54,53 +67,61 @@ export default function JobDetailPage() {
     },
   });
 
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [compareIds, setCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
-  const [showWeights, setShowWeights] = useState(false);
-  const [showUpload, setShowUpload] = useState(true);
+  const [showRequirements, setShowRequirements] = useState(true);
+  const [showWeights, setShowWeights] = useState(true);
+  const [showDescription, setShowDescription] = useState(false);
+  const [query, setQuery] = useState("");
   const [sort, setSort] = useState({ key: "overall_score", dir: "desc" });
   const [rescoringId, setRescoringId] = useState(null);
+  const [rescoringAll, setRescoringAll] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [candidateToDelete, setCandidateToDelete] = useState(null);
   const { mutateAsync: rescoreCandidate } = useRescoreForJob(jobId);
-
-  // Auto-collapse upload once candidates exist
-  useEffect(() => {
-    if (leaderboard?.length > 0) setShowUpload(false);
-  }, [leaderboard?.length]);
-
-  useEffect(() => {
-    if (compareIds.length < 2) setShowCompare(false);
-  }, [compareIds.length]);
+  const { mutateAsync: deleteCandidate } = useDeleteCandidateForJob(jobId);
 
   if (jobLoading) {
     return (
-      <div className="flex items-center justify-center py-24 gap-2 text-[var(--color-ink-muted)]">
-        <Loader2 size={20} className="animate-spin" />
+      <div className="flex items-center justify-center py-24 gap-2 text-[var(--muted-foreground)]">
+        <span className="mh-spinner" />
         <span className="text-sm">Loading job…</span>
       </div>
     );
   }
 
-  if (!job) return <p className="text-sm text-[var(--color-ink-muted)]">Job not found.</p>;
+  if (!job) return <p className="text-sm text-[var(--muted-foreground)]">Job not found.</p>;
 
   const mustHave = job.requirements?.filter((r) => r.kind === "must_have") ?? [];
   const niceToHave = job.requirements?.filter((r) => r.kind === "nice_to_have") ?? [];
+  const screenedCount = leaderboard?.filter((entry) => entry.status === "done").length ?? 0;
+  const rescorableCount =
+    leaderboard?.filter((entry) => entry.status === "done" || entry.status === "error").length ?? 0;
 
   const toggleCompare = (candidateId) => {
     setCompareIds((prev) =>
       prev.includes(candidateId)
-        ? prev.filter((id) => id !== candidateId)
+        ? prev.filter((item) => item !== candidateId)
         : prev.length < 4
         ? [...prev, candidateId]
         : prev
     );
   };
 
-  const sortedLeaderboard = [...(leaderboard ?? [])].sort((a, b) => {
-    const valA = a[sort.key] ?? -1;
-    const valB = b[sort.key] ?? -1;
-    return sort.dir === "desc" ? valB - valA : valA - valB;
-  });
+  const sortedLeaderboard = [...(leaderboard ?? [])]
+    .filter((entry) => {
+      const needle = query.trim().toLowerCase();
+      if (!needle) return true;
+      return (
+        entry.name.toLowerCase().includes(needle) ||
+        entry.original_filename.toLowerCase().includes(needle)
+      );
+    })
+    .sort((a, b) => {
+      const valA = a[sort.key] ?? -1;
+      const valB = b[sort.key] ?? -1;
+      return sort.dir === "desc" ? valB - valA : valA - valB;
+    });
 
   const handleSort = (key) => {
     setSort((prev) =>
@@ -113,8 +134,58 @@ export default function JobDetailPage() {
     setRescoringId(candidateId);
     try {
       await rescoreCandidate(candidateId);
+      toast.success("Rescore queued.");
+    } catch {
+      toast.error("Rescore failed.");
     } finally {
       setRescoringId(null);
+    }
+  };
+
+  const handleRescoreAll = async () => {
+    const candidates = (leaderboard ?? []).filter(
+      (entry) => entry.status === "done" || entry.status === "error"
+    );
+    if (!candidates.length) return;
+
+    setRescoringAll(true);
+    try {
+      const results = await Promise.allSettled(
+        candidates.map((candidate) => rescoreCandidate(candidate.id))
+      );
+      const failed = results.filter((result) => result.status === "rejected").length;
+      if (failed) {
+        toast.error(`${failed} candidate${failed !== 1 ? "s" : ""} failed to rescore.`);
+      } else {
+        toast.success(`${candidates.length} candidate${candidates.length !== 1 ? "s" : ""} queued.`);
+      }
+    } finally {
+      setRescoringAll(false);
+    }
+  };
+
+  const handleDeleteClick = (event, candidate) => {
+    event.stopPropagation();
+    setCandidateToDelete(candidate);
+  };
+
+  const handleCancelDelete = () => {
+    if (!deletingId) setCandidateToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!candidateToDelete) return;
+
+    setDeletingId(candidateToDelete.id);
+    try {
+      await deleteCandidate(candidateToDelete.id);
+      setCompareIds((current) => current.filter((item) => item !== candidateToDelete.id));
+      setCandidateToDelete(null);
+      toast.success("CV deleted.");
+    } catch {
+      toast.error("Failed to delete CV.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -124,166 +195,206 @@ export default function JobDetailPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2">
-        <Link to="/" className="flex items-center gap-1 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] transition-colors">
-          <ArrowLeft size={14} />
-          Jobs
-        </Link>
-        <span className="text-[var(--color-border)]">/</span>
-        <span className="text-sm text-[var(--color-ink)] font-medium truncate">{job.title}</span>
+    <div className="mh-page mh-job-detail-page">
+      <div className="mh-job-hero">
+        <div>
+          <h1 className="mh-job-title-main">{job.title}</h1>
+          <p className="mh-page-sub">
+            {mustHave.length + niceToHave.length} requirements extracted ·{" "}
+            {screenedCount} candidate{screenedCount !== 1 ? "s" : ""} screened
+          </p>
+          {job.extraction_status === "extracting" && (
+            <span className="mh-inline-processing">
+              <span className="mh-spinner mh-spinner-xs" />
+              Extracting requirements…
+            </span>
+          )}
+        </div>
+        <a href={jobsApi.exportCsv(jobId)} download>
+          <Button variant="outline" size="md">
+            <Download size={15} />
+            Export CSV
+          </Button>
+        </a>
       </div>
 
-      {/* Job header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold text-[var(--color-ink)]">{job.title}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            {job.extraction_status === "extracting" && (
-              <span className="flex items-center gap-1 text-xs text-[var(--color-primary)]">
-                <Loader2 size={12} className="animate-spin" />
-                Extracting requirements…
-              </span>
-            )}
-            {job.extraction_status === "done" && (
-              <span className="text-xs text-[var(--color-ink-muted)]">
-                {mustHave.length + niceToHave.length} requirements extracted
-              </span>
-            )}
-          </div>
+      <Card className="mh-about-card">
+        <SectionButton
+          icon={<FileText size={15} />}
+          title="About this role"
+          className="mh-about-head"
+        />
+        <div className={`mh-jd ${showDescription ? "is-open" : "is-faded"}`}>
+          {job.description}
         </div>
-        <div className="flex items-center gap-2">
-          {compareIds.length >= 2 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCompareIds([]);
-                setShowCompare(false);
-              }}
-            >
-              Clear compare ({compareIds.length})
-            </Button>
-          )}
-          {compareIds.length >= 2 && (
-            <Button size="sm" onClick={() => setShowCompare(true)}>
-              <GitCompare size={14} />
-              Compare {compareIds.length}
-            </Button>
-          )}
-          <a href={jobsApi.exportCsv(jobId)} download>
-            <Button variant="outline" size="sm">
-              <Download size={14} />
-              Export CSV
-            </Button>
-          </a>
-        </div>
-      </div>
+        {!showDescription && (
+          <button className="mh-read-full" onClick={() => setShowDescription(true)}>
+            Read full description
+            <ChevronDown size={14} />
+          </button>
+        )}
+        {showDescription && (
+          <button className="mh-read-full" onClick={() => setShowDescription(false)}>
+            Collapse description
+            <ChevronUp size={14} />
+          </button>
+        )}
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left panel: job info, requirements, upload, weights */}
-        <div className="flex flex-col gap-4">
-          {/* Requirements */}
+      <div className="mh-job-detail-grid">
+        <aside className="mh-stack">
+          <Card>
+            <SectionButton
+              icon={<UploadCloud size={15} />}
+              title="Upload CVs"
+              right={<span className="mh-card-action">Start here</span>}
+            />
+            <div className="mt-4">
+              <UploadZone jobId={jobId} />
+            </div>
+          </Card>
+
           {(mustHave.length > 0 || niceToHave.length > 0) && (
             <Card>
-              <h3 className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3">
-                Requirements
-              </h3>
-              {mustHave.length > 0 && (
-                <div className="mb-2">
-                  <p className="text-xs font-medium text-[var(--color-ink)] mb-1.5">Must-have</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {mustHave.map((r) => (
-                      <Badge key={r.id} variant="default">{r.text}</Badge>
-                    ))}
-                  </div>
+              <button
+                className="mh-sec-head mh-sec-button"
+                onClick={() => setShowRequirements((current) => !current)}
+              >
+                <span className="mh-sec-title">
+                  <ListChecks size={15} />
+                  Requirements
+                </span>
+                <span className="mh-row">
+                  <Badge variant="muted">{mustHave.length + niceToHave.length}</Badge>
+                  {showRequirements ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                </span>
+              </button>
+              <div className={`mh-collapse ${showRequirements ? "is-open" : ""}`}>
+                <div className="mh-collapse-inner">
+                  {mustHave.length > 0 && (
+                    <RequirementGroup title="Must-have" requirements={mustHave} variant="default" />
+                  )}
+                  {niceToHave.length > 0 && (
+                    <RequirementGroup title="Nice-to-have" requirements={niceToHave} variant="muted" />
+                  )}
+                  <p className="mh-ai-note">
+                    <Sparkles size={13} />
+                    Extracted by Claude from the description
+                  </p>
                 </div>
-              )}
-              {niceToHave.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-[var(--color-ink-muted)] mb-1.5 mt-2">Nice-to-have</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {niceToHave.map((r) => (
-                      <Badge key={r.id} variant="muted">{r.text}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </div>
             </Card>
           )}
 
-          {/* Upload zone */}
           <Card>
             <button
-              className="flex items-center justify-between w-full text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
-              onClick={() => setShowUpload((v) => !v)}
+              className="mh-sec-head mh-sec-button"
+              onClick={() => setShowWeights((current) => !current)}
             >
-              Upload CVs
-              {showUpload ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
-            {showUpload && <UploadZone jobId={jobId} />}
-          </Card>
-
-          {/* Scoring weights */}
-          <Card>
-            <button
-              className="flex items-center justify-between w-full text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
-              onClick={() => setShowWeights((v) => !v)}
-            >
-              <span className="flex items-center gap-1.5">
-                <SlidersHorizontal size={12} />
-                Scoring Weights
+              <span className="mh-sec-title">
+                <SlidersHorizontal size={15} />
+                Scoring weights
               </span>
-              {showWeights ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {showWeights ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
             </button>
-            {showWeights && (
-              <WeightsEditor jobId={jobId} currentWeights={job.category_weights} />
-            )}
+            <div className={`mh-collapse ${showWeights ? "is-open" : ""}`}>
+              <div className="mh-collapse-inner">
+                <WeightsEditor jobId={jobId} currentWeights={job.category_weights} />
+              </div>
+            </div>
           </Card>
-        </div>
+        </aside>
 
-        {/* Right panel: leaderboard */}
-        <div className="lg:col-span-2 flex flex-col gap-3">
+        <section className="mh-leaderboard-panel">
+          <div className="mh-tabletop">
+            <div className="mh-search mh-candidate-search">
+              <Search size={16} className="mh-input-icon" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search candidates..."
+                aria-label="Search candidates"
+              />
+            </div>
+            <div className="mh-row">
+              {compareIds.length >= 2 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCompareIds([]);
+                    setShowCompare(false);
+                  }}
+                >
+                  Clear compare ({compareIds.length})
+                </Button>
+              )}
+              {compareIds.length >= 2 && (
+                <Button size="sm" onClick={() => setShowCompare(true)}>
+                  <GitCompare size={14} />
+                  Compare {compareIds.length}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRescoreAll}
+                loading={rescoringAll}
+                disabled={rescoringAll || rescorableCount === 0}
+              >
+                {!rescoringAll && <RefreshCw size={14} />}
+                Rescore all
+              </Button>
+            </div>
+          </div>
+
           <BatchProgress jobId={jobId} />
 
           {lbLoading ? (
-            <div className="flex items-center gap-2 py-12 justify-center text-[var(--color-ink-muted)]">
-              <Loader2 size={18} className="animate-spin" />
-              <span className="text-sm">Loading candidates…</span>
+            <div className="mh-table-empty">
+              <span className="mh-spinner" />
+              <span>Loading candidates…</span>
             </div>
           ) : sortedLeaderboard.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-              <p className="text-sm font-medium text-[var(--color-ink)]">No candidates yet</p>
-              <p className="text-xs text-[var(--color-ink-muted)]">
-                Upload CVs to start screening
-              </p>
+            <div className="mh-table-empty">
+              <p>No candidates match this view.</p>
+              <span>Upload CVs or adjust the search term.</span>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]">
-              <table className="w-full text-sm border-collapse">
+            <div className="mh-table-wrap mh-leaderboard-table-wrap">
+              <table className="mh-table mh-leaderboard-table">
+                <colgroup>
+                  <col className="mh-col-select" />
+                  <col className="mh-col-rank" />
+                  <col className="mh-col-candidate" />
+                  <col className="mh-col-score" />
+                  <col className="mh-col-category" />
+                  <col className="mh-col-category" />
+                  <col className="mh-col-category" />
+                  <col className="mh-col-category" />
+                  <col className="mh-col-status" />
+                  <col className="mh-col-action" />
+                </colgroup>
                 <thead>
-                  <tr
-                    className="text-xs text-[var(--color-ink-muted)] font-medium"
-                    style={{ background: "var(--color-canvas)", borderBottom: "1px solid var(--color-border)" }}
-                  >
-                    <th className="px-3 py-3 text-left w-8">#</th>
-                    <th className="px-3 py-3 text-left">Candidate</th>
+                  <tr>
+                    <th className="mh-select-col"></th>
+                    <th>#</th>
+                    <th>Candidate</th>
                     <th
-                      className="px-3 py-3 text-left cursor-pointer hover:text-[var(--color-primary)] transition-colors select-none"
+                      className="cursor-pointer select-none"
                       onClick={() => handleSort("overall_score")}
                     >
                       <span className="flex items-center gap-1">
                         Score <SortIcon k="overall_score" />
                       </span>
                     </th>
-                    {CATEGORIES.map((c) => (
-                      <th key={c} className="px-2 py-3 text-center hidden lg:table-cell text-[10px] uppercase">
-                        {CAT_LABEL[c]}
+                    {CATEGORIES.map((category) => (
+                      <th key={category} className="center">
+                        {CAT_LABEL[category]}
                       </th>
                     ))}
-                    <th className="px-3 py-3 text-left">Status</th>
-                    <th className="px-3 py-3 text-center w-8"></th>
+                    <th>Status</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,107 +406,111 @@ export default function JobDetailPage() {
                     return (
                       <tr
                         key={entry.id}
-                        className="border-t border-[var(--color-border)] hover:bg-[var(--color-primary-light)] transition-colors cursor-pointer"
-                        style={isInCompare ? { background: "rgba(114,107,255,0.06)" } : {}}
-                        onClick={() => (isDone || isError) && setSelectedCandidate(entry.id)}
+                        className={isInCompare ? "is-selected" : ""}
+                        onClick={() => {
+                          if (isDone || isError) {
+                            navigate(`/candidates/${entry.id}`, {
+                              state: { from: `/jobs/${jobId}` },
+                            });
+                          }
+                        }}
                       >
-                        {/* Rank */}
-                        <td className="px-3 py-3">
-                          <span className="text-xs font-medium text-[var(--color-ink-muted)]">
-                            {isDone ? entry.rank : "–"}
-                          </span>
+                        <td onClick={(event) => event.stopPropagation()}>
+                          {isDone && (
+                            <button
+                              type="button"
+                              role="checkbox"
+                              aria-checked={isInCompare}
+                              onClick={() => toggleCompare(entry.id)}
+                              className={`mh-check ${isInCompare ? "is-checked" : ""}`}
+                              style={{ width: 22, height: 22 }}
+                              title="Add to compare"
+                            >
+                              <svg viewBox="0 0 24 24" width={13} height={13} aria-hidden="true">
+                                <path
+                                  d="M5 12.5l4.2 4.3L19 7"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mh-check-path"
+                                />
+                              </svg>
+                            </button>
+                          )}
                         </td>
-
-                        {/* Name */}
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-2">
-                            {isDone && (
-                              <input
-                                type="checkbox"
-                                checked={isInCompare}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => { e.stopPropagation(); toggleCompare(entry.id); }}
-                                className="accent-[var(--color-primary)]"
-                                title="Add to compare"
-                              />
-                            )}
-                            <div>
-                              <p className="font-medium text-[var(--color-ink)] text-xs leading-tight">
-                                {entry.name}
-                              </p>
-                              <p className="text-[10px] text-[var(--color-ink-muted)] truncate max-w-[140px]">
-                                {entry.original_filename}
-                              </p>
+                        <td>
+                          <span className="mh-rank">{isDone ? entry.rank : "–"}</span>
+                        </td>
+                        <td>
+                          <div className="mh-candidate-cell">
+                            <span className="mh-cand-avatar" style={{ background: avatarColor(entry.name) }}>
+                              {initials(entry.name)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="mh-cand-name">{entry.name}</p>
+                              <p className="mh-cand-file">{entry.original_filename}</p>
                               {isError && entry.error && (
-                                <p
-                                  className="text-[10px] text-red-600 truncate max-w-[220px]"
-                                  title={entry.error}
-                                >
+                                <p className="mh-error-line" title={entry.error}>
                                   {entry.error}
                                 </p>
                               )}
                             </div>
                           </div>
                         </td>
-
-                        {/* Overall score */}
-                        <td className="px-3 py-3 min-w-[100px]">
+                        <td>
                           {isDone && entry.overall_score != null ? (
-                            <div className="flex flex-col gap-1">
-                              <ScoreBar score={entry.overall_score} height={4} />
-                              {entry.recommendation && (
-                                <span
-                                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${recommendationClass(entry.recommendation)}`}
-                                >
-                                  {recommendationLabel(entry.recommendation)}
-                                </span>
-                              )}
+                            <div className="mh-score-cell">
+                              <span className="mh-score-number mono">{entry.overall_score.toFixed(1)}</span>
+                              <ScoreBar score={entry.overall_score} height={5} showLabel={false} />
                             </div>
                           ) : (
-                            <span className="text-xs text-[var(--color-ink-subtle)]">–</span>
+                            <span className="text-xs text-[var(--subtle-foreground)]">–</span>
                           )}
                         </td>
-
-                        {/* Category mini-scores */}
-                        {CATEGORIES.map((c) => (
-                          <td key={c} className="px-2 py-3 text-center hidden lg:table-cell">
-                            {isDone && entry.category_scores?.[c] ? (
-                              <ScorePill score={entry.category_scores[c].score} />
+                        {CATEGORIES.map((category) => (
+                          <td key={category} className="center">
+                            {isDone && entry.category_scores?.[category] ? (
+                              <ScorePill score={entry.category_scores[category].score} />
                             ) : (
-                              <span className="text-xs text-[var(--color-ink-subtle)]">–</span>
+                              <span className="text-xs text-[var(--subtle-foreground)]">–</span>
                             )}
                           </td>
                         ))}
-
-                        {/* Status */}
-                        <td className="px-3 py-3">
+                        <td>
                           <StatusBadge status={entry.status} />
                         </td>
-
-                        {/* Action */}
-                        <td className="px-3 py-3 text-center">
-                          {isDone && (
+                        <td onClick={(event) => event.stopPropagation()}>
+                          <div className="mh-row-actions">
+                            {isError && (
+                              <button
+                                className="mh-icon-btn"
+                                disabled={rescoringId === entry.id}
+                                onClick={(event) => handleRetry(event, entry.id)}
+                                title={entry.error ?? "Retry scoring"}
+                                aria-label={`Retry scoring ${entry.name}`}
+                              >
+                                <RefreshCw
+                                  size={14}
+                                  className={rescoringId === entry.id ? "animate-spin" : ""}
+                                />
+                              </button>
+                            )}
                             <button
-                              className="text-xs text-[var(--color-primary)] hover:underline"
-                              onClick={(e) => { e.stopPropagation(); setSelectedCandidate(entry.id); }}
+                              className="mh-icon-btn mh-delete-btn"
+                              disabled={deletingId === entry.id}
+                              onClick={(event) => handleDeleteClick(event, entry)}
+                              title="Delete CV"
+                              aria-label={`Delete ${entry.name}`}
                             >
-                              View
+                              {deletingId === entry.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={14} />
+                              )}
                             </button>
-                          )}
-                          {isError && (
-                            <button
-                              className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline disabled:opacity-50"
-                              disabled={rescoringId === entry.id}
-                              onClick={(e) => handleRetry(e, entry.id)}
-                              title={entry.error ?? "Retry scoring"}
-                            >
-                              <RefreshCw
-                                size={12}
-                                className={rescoringId === entry.id ? "animate-spin" : ""}
-                              />
-                              Retry
-                            </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -404,25 +519,72 @@ export default function JobDetailPage() {
               </table>
             </div>
           )}
-        </div>
+        </section>
       </div>
 
-      {/* Candidate detail drawer */}
-      {selectedCandidate && (
-        <CandidateDrawer
-          candidateId={selectedCandidate}
-          requirements={job.requirements ?? []}
-          onClose={() => setSelectedCandidate(null)}
-        />
+      {showCompare && compareIds.length >= 2 && (
+        <CompareView candidateIds={compareIds} onClose={() => setShowCompare(false)} />
       )}
 
-      {/* Compare view */}
-      {showCompare && compareIds.length >= 2 && (
-        <CompareView
-          candidateIds={compareIds}
-          onClose={() => setShowCompare(false)}
-        />
-      )}
+      <Dialog open={!!candidateToDelete} onClose={handleCancelDelete} title="Delete CV" size="sm">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">
+            Delete{" "}
+            <span className="font-semibold text-[var(--foreground)]">
+              {candidateToDelete?.name}
+            </span>{" "}
+            from this job? This will remove the CV and its evaluation from the leaderboard.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelDelete} disabled={!!deletingId}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleConfirmDelete} loading={!!deletingId}>
+              <Trash2 size={14} />
+              Delete CV
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
+}
+
+function SectionButton({ icon, title, right, className = "" }) {
+  return (
+    <div className={`mh-sec-head ${className}`}>
+      <span className="mh-sec-title">
+        {icon}
+        {title}
+      </span>
+      {right}
+    </div>
+  );
+}
+
+function RequirementGroup({ title, requirements, variant }) {
+  return (
+    <div className="mh-req-group">
+      <p className="mh-reqgroup-label">{title}</p>
+      <div className="mh-chips">
+        {requirements.map((requirement) => (
+          <Badge key={requirement.id} variant={variant}>
+            {requirement.text}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function initials(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+function avatarColor(name = "") {
+  const colors = ["#b8a2f2", "#8577ff", "#3653dc", "#0f8a4b", "#6b69ff"];
+  const sum = [...name].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[sum % colors.length];
 }

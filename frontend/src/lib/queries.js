@@ -125,6 +125,19 @@ export function useRescoreForJob(jobId) {
   });
 }
 
+export function useDeleteCandidateForJob(jobId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (candidateId) => candidatesApi.delete(candidateId),
+    onSuccess: (_, candidateId) => {
+      qc.removeQueries({ queryKey: keys.candidate(candidateId) });
+      qc.invalidateQueries({ queryKey: keys.leaderboard(jobId) });
+      qc.invalidateQueries({ queryKey: keys.batchStatus(jobId) });
+      qc.invalidateQueries({ queryKey: keys.jobs });
+    },
+  });
+}
+
 // ── Demo seed ─────────────────────────────────────────────────────────────────
 
 export function useSeed() {

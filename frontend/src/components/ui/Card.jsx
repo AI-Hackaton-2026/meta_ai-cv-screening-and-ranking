@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 export function Card({ children, className, clickable, ...props }) {
   return (
     <div
-      className={cn("card p-5", clickable && "cursor-pointer", className)}
+      className={cn("card mh-card p-5", clickable && "mh-card-clickable", className)}
       {...props}
     >
       {children}
