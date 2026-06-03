@@ -40,7 +40,7 @@ export function WeightsEditor({ jobId, currentWeights }) {
     try {
       await updateJob({ category_weights: computedWeights });
       setHasChanges(false);
-      toast.success("Weights saved. Re-score candidates to apply.");
+      toast.success("Weights saved.");
     } catch {
       toast.error("Failed to save weights.");
     }
