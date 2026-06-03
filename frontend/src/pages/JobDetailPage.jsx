@@ -264,7 +264,16 @@ export default function JobDetailPage() {
       <div className="mh-job-detail-grid">
         <aside className="mh-stack mh-job-sidebar">
           <div className="mh-sidebar-upload-row">
-            <UploadZone jobId={jobId} compact />
+            <UploadZone
+              jobId={jobId}
+              compact
+              disabled={job.extraction_status !== "done"}
+              disabledMessage={
+                job.extraction_status === "error"
+                  ? "Requirement extraction failed."
+                  : "Requirements are still being extracted. Upload will unlock when the job is ready."
+              }
+            />
           </div>
 
           {(mustHave.length > 0 || niceToHave.length > 0) && (

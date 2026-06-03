@@ -158,9 +158,9 @@ GET    /candidates/{id}             Full evaluation detail
 POST   /candidates/{id}/rescore     Re-run Claude scoring
 GET    /jobs/{id}/export?format=csv Shortlist CSV
 GET    /candidates/{id}/export?format=pdf  Candidate report PDF
-
-POST   /seed                        Load sample jobs + CVs (demo)
 ```
+
+Demo data (CLI only): `uv run python -m app.seed` from `backend/`
 
 Interactive docs at `http://localhost:8000/docs` when backend is running.
 

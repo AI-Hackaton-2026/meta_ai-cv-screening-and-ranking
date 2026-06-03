@@ -2,22 +2,19 @@
 
 > **FEP 2026 Hackathon** — Symphony AI-native engineering team
 
-MetaHire is an internal recruiter tool. Create job postings, upload candidate CVs (PDF/DOCX, single or batch), and let Claude AI extract requirements, score candidates across four dimensions, and produce a transparent ranked leaderboard with evidence-backed reasoning.
+MetaHire helps recruiters prioritize candidates faster. Create a job from a description, upload CVs (PDF/DOCX), and Claude extracts requirements, scores each candidate across four categories, and ranks them with evidence-backed reasoning. Humans stay in control: all scores and recommendations are advisory.
 
 ---
 
 ## Features
 
-- **Job management** — create and manage job openings with descriptions
-- **Automated requirement extraction** — Claude reads the job description and extracts must-have and nice-to-have requirements, automatically
-- **Batch CV screening** — upload 1-N PDF or DOCX files; all are processed concurrently in the background
-- **Transparent scoring** — four scoring categories (Skills, Experience, Education, Domain Fit) with per-category rationales and recruiter-tunable weights
-- **Evidence quotes** — every requirement match shows a verbatim quote from the CV
-- **Ranked leaderboard** — live-updated ranking as candidates are processed
-- **Candidate drilldown** — radar chart, requirement checklist, strengths & gaps, full AI reasoning
-- **Side-by-side comparison** — compare up to 4 candidates simultaneously
-- **Export** — shortlist CSV per job, individual PDF evaluation report per candidate
-- **Demo data** — one-click sample data loader with 8 varied CV profiles
+- **Job + requirement extraction** — must-have / nice-to-have requirements from the job description
+- **Batch CV screening** — concurrent background scoring with live leaderboard updates
+- **Transparent scoring** — Skills, Experience, Education, Domain Fit (0–100) with rationales; tunable category weights
+- **Evidence** — per-requirement met/partial/unmet with quotes from the CV
+- **Candidate detail** — summary, strengths/gaps, full reasoning, PDF export
+- **Compare** — up to 4 candidates side-by-side
+- **Exports** — shortlist CSV per job, evaluation PDF per candidate
 
 ---
 
@@ -25,193 +22,95 @@ MetaHire is an internal recruiter tool. Create job postings, upload candidate CV
 
 ### Prerequisites
 
-| Tool | Version | Install |
-|---|---|---|
-| Python | 3.12 | [python.org](https://python.org) |
-| uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| Node.js | 22+ | [nodejs.org](https://nodejs.org) |
-| npm | 10+ | bundled with Node |
+| Tool | Version |
+|---|---|
+| Python | 3.12 |
+| [uv](https://docs.astral.sh/uv/) | latest |
+| Node.js | 22+ |
+| Anthropic API key | [console.anthropic.com](https://console.anthropic.com) |
 
-### 1. Backend
+### Backend
 
 ```bash
 cd backend
-
-# Install dependencies
 uv sync
-
-# Configure environment (required: ANTHROPIC_API_KEY)
-cp .env.example .env
-# → Open .env and set ANTHROPIC_API_KEY=sk-ant-...
-
-# Start API server
+cp .env.example .env   # set ANTHROPIC_API_KEY=sk-ant-...
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-API is now at **http://localhost:8000** — interactive docs at **http://localhost:8000/docs**
+API: **http://localhost:8000** · OpenAPI: **http://localhost:8000/docs**
 
-### 2. Frontend
+### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
 ```
 
-App is now at **http://localhost:5173**
+App: **http://localhost:5173** (Vite proxies `/api` → backend)
 
-### 3. Load sample data (optional)
+### Demo preparation (before presenting)
 
-Either click **"Load Sample Data"** in the UI, or:
+Prepare data **before** the live demo — there is no in-app “load sample data” button.
 
 ```bash
-# Generate sample CV PDFs (one-time, only needed if samples/cvs/ is empty)
+# Optional: regenerate sample CV PDFs if samples/cvs/ is empty
 cd backend && uv run python ../samples/create_sample_cvs.py
 
-# Seed via API
-curl -X POST http://localhost:8000/seed
+# Load sample jobs + CVs and run AI extraction/scoring (uses Anthropic API)
+cd backend && uv run python -m app.seed
 ```
+
+Then start backend and frontend and walk through an existing job, or create a fresh job and upload CVs from `samples/cvs/`.
 
 ---
 
-## Project Structure
+## Environment variables
 
-```
-metahire/
-├── backend/              # FastAPI API (Python 3.12, uv)
-│   ├── app/
-│   │   ├── main.py       # App factory, lifespan, CORS
-│   │   ├── config.py     # Environment settings
-│   │   ├── db.py         # Async SQLAlchemy engine + session
-│   │   ├── models.py     # ORM models (Job, Requirement, Candidate, Evaluation)
-│   │   ├── schemas.py    # Pydantic schemas + LLM output models
-│   │   ├── routers/      # HTTP route handlers
-│   │   │   ├── jobs.py
-│   │   │   └── candidates.py
-│   │   ├── services/     # Business logic
-│   │   │   ├── parsing.py   # PDF/DOCX → text
-│   │   │   ├── claude.py    # Claude API integration
-│   │   │   ├── scoring.py   # Weighted scoring + batch orchestrator
-│   │   │   └── export.py    # CSV + PDF export
-│   │   └── seed.py       # Demo data loader
-│   ├── data/             # SQLite database (gitignored)
-│   ├── .env.example      # Environment variable template
-│   └── pyproject.toml    # uv project + tool config
-│
-├── frontend/             # React 19 + Vite 6 (JavaScript)
-│   ├── src/
-│   │   ├── App.jsx       # Router root
-│   │   ├── main.jsx      # Entry point
-│   │   ├── pages/        # Route components
-│   │   ├── components/   # Reusable UI components
-│   │   │   └── ui/       # Design system primitives
-│   │   ├── lib/
-│   │   │   ├── api.js    # Axios API client
-│   │   │   ├── queries.js # TanStack Query hooks
-│   │   │   └── utils.js  # Formatting helpers
-│   │   └── styles/
-│   │       ├── tokens.css # Symphony brand design tokens
-│   │       └── main.css  # Global styles + Tailwind import
-│   └── package.json
-│
-├── samples/              # Demo data
-│   ├── cvs/              # Sample CV PDFs (generated)
-│   ├── jobs/             # Sample job descriptions
-│   └── create_sample_cvs.py  # PDF generator script
-│
-├── docs/                 # Extended documentation
-├── .cursor/rules/        # Cursor AI coding conventions
-├── AGENTS.md             # AI agent guide (Cursor, Codex, Claude)
-├── CLAUDE.md             # Claude-specific notes
-└── README.md             # This file
-```
+Copy `backend/.env.example` → `backend/.env`.
+
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | Claude API key |
+| `CLAUDE_MODEL` | No | Default `claude-sonnet-4-5` |
+| `MAX_CONCURRENCY` | No | Parallel scoring tasks (default `5`) |
+| `CORS_ORIGINS` | No | Frontend origin(s), comma-separated |
+| `DATABASE_URL` | No | Default SQLite under `backend/data/` |
+| `SUPABASE_*` | No | Optional private storage for original CV files |
+
+See [docs/setup.md](docs/setup.md) for Supabase setup and troubleshooting.
 
 ---
 
-## Environment Variables
+## How AI works (presentation reference)
 
-All in `backend/.env` (copy from `backend/.env.example`):
+1. **Requirement extraction** (on job create) — Claude returns structured must-have / nice-to-have requirements and suggested category weights.
+2. **Candidate evaluation** (per CV) — category scores, requirement matches with verbatim evidence, strengths/gaps, recommendation (`advance` / `hold` / `reject`), summary, and reasoning.
+3. **Overall score** — computed in Python: `Σ(weight × category_score) / total_weight` (not by the model). Recruiters can change weights and rescore.
+4. **Human oversight** — recommendations are advisory; recruiters review evidence and decide.
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `ANTHROPIC_API_KEY` | ✅ | — | Your Anthropic API key |
-| `CLAUDE_MODEL` | | `claude-sonnet-4-5` | Claude model to use |
-| `MAX_CONCURRENCY` | | `5` | Max concurrent scoring tasks |
-| `CORS_ORIGINS` | | `http://localhost:5173` | Allowed frontend origins |
-| `DATABASE_URL` | | `sqlite+aiosqlite:///./data/metahire.db` | Database path |
-| `SUPABASE_URL` | | — | Supabase project root URL for optional CV file storage |
-| `SUPABASE_SERVICE_ROLE_KEY` | | — | Backend-only key for private CV file storage |
-| `SUPABASE_STORAGE_BUCKET` | | `cvs` | Private Storage bucket for original CV files |
-
----
-
-## Documentation
-
-| Doc | Description |
-|---|---|
-| [docs/setup.md](docs/setup.md) | Detailed setup + troubleshooting |
-| [docs/usage.md](docs/usage.md) | Recruiter user guide |
-| [docs/architecture.md](docs/architecture.md) | System architecture + data model |
-| [docs/api.md](docs/api.md) | API endpoint reference |
-| [docs/ai.md](docs/ai.md) | AI integration details, prompts, scoring math |
-| [docs/branding.md](docs/branding.md) | Symphony design token reference |
-| [AGENTS.md](AGENTS.md) | AI agent guide for Cursor/Codex/Claude |
+More detail: [docs/ai.md](docs/ai.md) · Architecture: [docs/architecture.md](docs/architecture.md) · API: [docs/api.md](docs/api.md)
 
 ---
 
 ## Development
 
-### Backend checks
-
 ```bash
-cd backend
-uv run ruff check .        # lint
-uv run ruff format .       # format
-uv run pyright             # type check
-```
+# Backend
+cd backend && uv run ruff check . && uv run pyright
 
-### Frontend checks
-
-```bash
-cd frontend
-npm run lint               # eslint
-npm run build              # production build check
+# Frontend
+cd frontend && npm run lint && npm run build
 ```
 
 ---
 
-## How AI Works (Jury Reference)
-
-1. **Requirement Extraction**: When a job is created, Claude reads the job description and extracts structured must-have and nice-to-have requirements, tagging each to a scoring category (Skills, Experience, Education, Domain Fit). It also suggests scoring weights based on the role's emphasis.
-
-2. **Candidate Evaluation**: Claude reads each CV against the job requirements and returns:
-   - Per-category scores (0–100) with rationale
-   - Per-requirement status (met/partial/unmet) with verbatim evidence quotes
-   - Strengths and gaps specific to this role
-   - A recommendation (advance/hold/reject) with recruiter summary
-   - Full chain-of-thought reasoning
-
-3. **Transparent Scoring**: Overall score = `Σ(weight × score) / 100` — a deterministic formula visible to recruiters who can edit weights and rescore.
-
-4. **Human Oversight**: Recommendations are advisory. Recruiters see all reasoning, can compare candidates, and make final decisions.
-
----
-
-## Tech Stack
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| AI | Anthropic Claude (claude-sonnet-4-5, structured outputs) |
-| Backend | FastAPI 0.136 · Python 3.12 · uv |
-| Database | SQLite (async SQLAlchemy 2.0 + aiosqlite) |
-| PDF parsing | pypdf / pdfplumber + python-docx |
-| PDF export | reportlab |
-| Frontend | React 19 · Vite 6 · JavaScript |
-| Styling | Tailwind CSS v4 · Symphony brand tokens |
-| Data fetching | TanStack Query v5 |
-| Charts | recharts |
-| CI | GitHub Actions (ruff + eslint) |
+| AI | Anthropic Claude (structured outputs) |
+| Backend | FastAPI · Python 3.12 · uv · SQLite (async) |
+| Frontend | React 19 · Vite 6 · TanStack Query · Tailwind v4 |
+| CI | GitHub Actions (ruff, pyright, eslint, build) |

@@ -9,14 +9,19 @@ import { useUploadCandidates } from "@/lib/queries";
 
 const ACCEPTED = { "application/pdf": [".pdf"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] };
 
-export function UploadZone({ jobId, onUploaded, compact = false }) {
+export function UploadZone({
+  jobId,
+  onUploaded,
+  compact = false,
+  disabled = false,
+  disabledMessage = "Wait for requirement extraction to finish before uploading CVs.",
+}) {
   const [files, setFiles] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const { mutateAsync: upload, isPending } = useUploadCandidates(jobId);
 
   const onDrop = useCallback((accepted) => {
     setFiles((prev) => {
-      // Deduplicate by name
       const names = new Set(prev.map((f) => f.name));
       return [...prev, ...accepted.filter((f) => !names.has(f.name))];
     });
@@ -26,6 +31,7 @@ export function UploadZone({ jobId, onUploaded, compact = false }) {
     onDrop,
     accept: ACCEPTED,
     multiple: true,
+    disabled,
   });
 
   const removeFile = (name) => setFiles((prev) => prev.filter((f) => f.name !== name));
@@ -52,10 +58,14 @@ export function UploadZone({ jobId, onUploaded, compact = false }) {
 
   const uploadContent = (
     <div className="flex flex-col gap-3">
-      {/* Drop target */}
+      {disabled && (
+        <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+          {disabledMessage}
+        </p>
+      )}
       <div
         {...getRootProps()}
-        className={cn("mh-drop", isDragActive && "drag")}
+        className={cn("mh-drop", isDragActive && "drag", disabled && "mh-drop--disabled")}
       >
         <input {...getInputProps()} />
         <UploadCloud
@@ -113,7 +123,12 @@ export function UploadZone({ jobId, onUploaded, compact = false }) {
     return (
       <>
         <div className="mh-compact-upload">
-          <Button type="button" size="sm" onClick={() => setModalOpen(true)}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={disabled}
+            onClick={() => setModalOpen(true)}
+          >
             <UploadCloud size={14} />
             Upload CVs
           </Button>

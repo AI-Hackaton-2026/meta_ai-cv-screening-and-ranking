@@ -1,44 +1,24 @@
-# Setup Guide
+# Setup & troubleshooting
 
-## Prerequisites
-
-| Tool | Version | Notes |
-|---|---|---|
-| Python | 3.12 | Use pyenv or official installer |
-| uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| Node.js | 22 LTS | [nodejs.org](https://nodejs.org) |
-| npm | 10+ | Bundled with Node |
-| Anthropic API key | — | Required — get one at [console.anthropic.com](https://console.anthropic.com) |
-
----
-
-## Backend Setup
+## Backend
 
 ```bash
 cd backend
-
-# 1. Install Python dependencies
 uv sync
-
-# 2. Create your environment file
 cp .env.example .env
 ```
 
-Open `backend/.env` and fill in:
+Set `ANTHROPIC_API_KEY` in `.env`. Start the server:
 
-```env
-ANTHROPIC_API_KEY=sk-ant-your-key-here
+```bash
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-The other variables have sensible defaults for local development.
+SQLite is created automatically at `backend/data/metahire.db`.
 
-### Supabase Storage for CV uploads
+### Optional: Supabase CV storage
 
-To persist original CV files in Supabase:
-
-1. Create a private Storage bucket named `cvs` in your Supabase project.
-2. Open **Project Settings → API** and add the project URL and service-role key to
-   `backend/.env`:
+To persist original uploaded files (recommended for cloud deploys):
 
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
@@ -46,85 +26,39 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_STORAGE_BUCKET=cvs
 ```
 
-Keep the service-role key in the backend only. The React app uploads CVs to FastAPI,
-which parses each file and stores the original in the private bucket at
-`jobs/{job_id}/{generated_id}.{extension}`.
-
-```bash
-# 3. Start the server
-uv run uvicorn app.main:app --reload --port 8000
-```
-
-The server will:
-- Create the SQLite database at `backend/data/metahire.db` automatically
-- Print `MetaHire API started` in the terminal
-- Serve interactive API docs at http://localhost:8000/docs
+Create a **private** bucket named `cvs` in Supabase. Never expose the service-role key to the frontend.
 
 ---
 
-## Frontend Setup
+## Frontend
 
 ```bash
 cd frontend
-
-# 1. Install Node dependencies
 npm install
-
-# 2. Start the dev server
 npm run dev
 ```
 
-The app will open at **http://localhost:5173**. The Vite dev server proxies `/api/*` to the backend automatically.
+Production build: set `VITE_API_URL` to your backend URL (no `/api` suffix).
 
 ---
 
-## Loading Demo Data
-
-### Option 1: UI button
-
-Click **"Load Sample Data"** on the Jobs page.
-
-### Option 2: Generate + seed manually
+## Demo data (CLI only)
 
 ```bash
-# Generate sample CV PDFs (only needed once, if samples/cvs/ is empty)
 cd backend
-uv run python ../samples/create_sample_cvs.py
-
-# Seed via API
-curl -X POST http://localhost:8000/seed
+uv run python -m app.seed
 ```
 
-This creates 2 sample jobs and attaches 8 candidate CVs of varying quality.
+This creates sample jobs from `samples/`, attaches CVs from `samples/cvs/`, runs requirement extraction, and scores candidates. **Requires a valid Anthropic API key** and may take several minutes.
 
 ---
 
 ## Troubleshooting
 
-### "Missing ANTHROPIC_API_KEY"
-
-The app validates this on startup. Check that `backend/.env` exists and contains a valid key starting with `sk-ant-`.
-
-### "Connection refused" from frontend
-
-The backend must be running before the frontend can fetch data. Start the backend first.
-
-### Scanned PDFs show no score
-
-The PDF parser extracts text from text-based PDFs only. Scanned PDFs (images) return empty text, which is flagged as an error. Use the sample CVs in `samples/cvs/` which are all text-based.
-
-### Port conflicts
-
-- Backend: change `--port 8000` in the uvicorn command and update `CORS_ORIGINS` in `.env`
-- Frontend: Vite will auto-increment the port if 5173 is taken; update the Vite proxy target if you change the backend port
-
----
-
-## Pre-commit hooks (optional)
-
-If you want local lint checks on every commit:
-
-```bash
-pip install pre-commit
-pre-commit install
-```
+| Issue | Fix |
+|---|---|
+| Missing `ANTHROPIC_API_KEY` | Add key to `backend/.env` |
+| Frontend connection refused | Start backend before frontend |
+| Upload rejected (409) | Wait until job extraction status is **Ready** |
+| CV scoring error / empty text | Scanned PDFs are not supported; use text-based PDF/DOCX |
+| Port in use | Change uvicorn `--port` and `CORS_ORIGINS` in `.env` |
