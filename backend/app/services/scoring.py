@@ -40,16 +40,25 @@ def compute_overall_score(
 ) -> float:
     """
     Weighted average: Σ(weight_i × score_i) / 100.
-    Falls back to DEFAULT_WEIGHTS if weights is None or a key is missing.
+    Falls back to DEFAULT_WEIGHTS only when weights is None.
     Result is clamped to [0, 100] and rounded to 1 decimal place.
     """
-    w = weights or DEFAULT_WEIGHTS
+    w = (
+        DEFAULT_WEIGHTS
+        if weights is None
+        else {category: weights.get(category, 0) for category in DEFAULT_WEIGHTS}
+    )
     total_weight = 0
     weighted_sum = 0.0
 
-    for category, data in category_scores.items():
-        score = data["score"] if isinstance(data, dict) else data.score
-        weight = w.get(category, DEFAULT_WEIGHTS.get(category, 0))
+    for category, weight in w.items():
+        data = category_scores.get(category)
+        if data is None:
+            score = 0
+        elif isinstance(data, dict):
+            score = data["score"]
+        else:
+            score = data.score
         weighted_sum += weight * score
         total_weight += weight
 
