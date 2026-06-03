@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Briefcase, FileText, Sparkles, Type, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { SparkleIcon } from "@/components/icons";
 import { useCreateJob } from "@/lib/queries";
 
 export function CreateJobDialog({ open, onClose }) {
@@ -107,11 +108,7 @@ export function CreateJobDialog({ open, onClose }) {
           </Field>
 
           <div className="mh-ai-hint">
-            <Sparkles
-              size={16}
-              strokeWidth={2.1}
-              className="mt-0.5 shrink-0 text-[var(--primary)]"
-            />
+            <SparkleIcon size={18} className="mt-0.5 shrink-0" />
             <p>
               On create, MetaHire extracts <strong>must-have</strong> and{" "}
               <strong>nice-to-have</strong> requirements and suggests scoring weights.

@@ -12,9 +12,9 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { AscendingIcon } from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -26,6 +26,7 @@ import { BatchProgress } from "@/components/BatchProgress";
 import { UploadZone } from "@/components/UploadZone";
 import { CompareView } from "@/components/CompareView";
 import { WeightsEditor } from "@/components/WeightsEditor";
+import { Markdown } from "@/components/Markdown";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   useBatchStatus,
@@ -289,7 +290,7 @@ export default function JobDetailPage() {
 
           <Card>
             <SectionButton
-              icon={<SlidersHorizontal size={15} />}
+              icon={<AscendingIcon size={17} />}
               title="Scoring weights"
             />
             <div className="mh-static-card-body">
@@ -577,9 +578,7 @@ export default function JobDetailPage() {
       >
         <div className="flex flex-col gap-3">
           <h3 className="text-base font-semibold text-(--foreground)">{job.title}</h3>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-(--muted-foreground)">
-            {job.description}
-          </p>
+          <Markdown>{job.description}</Markdown>
         </div>
       </Dialog>
 
