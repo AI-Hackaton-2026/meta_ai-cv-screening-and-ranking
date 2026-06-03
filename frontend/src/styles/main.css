@@ -157,14 +157,29 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 28px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: transparent;
   border: 2px solid rgba(99, 84, 224, 0.19);
   border-right: 0;
   border-left: 0;
   border-top: 0;
   box-shadow: 0 1px 12px rgba(40, 30, 90, 0.05);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.mh-topnav::before {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.72);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.mh-topnav > * {
+  position: relative;
+  z-index: 1;
 }
 
 .mh-logo-link {
