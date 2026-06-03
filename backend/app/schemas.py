@@ -63,6 +63,7 @@ class JobOut(BaseModel):
 class JobListItem(BaseModel):
     id: int
     title: str
+    description: str
     extraction_status: str
     created_at: datetime
     candidate_count: int = 0

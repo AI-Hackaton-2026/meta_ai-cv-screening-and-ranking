@@ -20,6 +20,7 @@
 :root {
   /* ── Brand colours ──────────────────────────────────────────────── */
   --color-primary: #6b69ff;
+  --brand-rgb: 107, 105, 255;
   --color-primary-hover: #5f57f0;
   --color-primary-light: rgba(107, 105, 255, 0.1);
   --color-primary-medium: rgba(107, 105, 255, 0.2);

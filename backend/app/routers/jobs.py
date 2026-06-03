@@ -189,6 +189,7 @@ async def list_jobs(
             JobListItem(
                 id=job.id,
                 title=job.title,
+                description=job.description,
                 extraction_status=job.extraction_status,
                 created_at=job.created_at,
                 candidate_count=counts.get(job.id, 0),

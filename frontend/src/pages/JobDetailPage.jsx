@@ -12,9 +12,9 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { AscendingIcon } from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -289,7 +289,7 @@ export default function JobDetailPage() {
 
           <Card>
             <SectionButton
-              icon={<SlidersHorizontal size={15} />}
+              icon={<AscendingIcon size={17} />}
               title="Scoring weights"
             />
             <div className="mh-static-card-body">
