@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     claude_model: str = "claude-sonnet-4-5"
     max_concurrency: int = 5
-    database_url: str = "sqlite+aiosqlite:///./data/metahire.db"
+    database_url: str
+    database_ssl_insecure: bool = False
 
     @field_validator("database_url")
     @classmethod

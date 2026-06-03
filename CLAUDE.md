@@ -24,10 +24,10 @@ Prompts live at the top of `claude.py` as module-level string constants (`REQUIR
 ## Stack Cheatsheet
 
 ```
-Backend:  FastAPI 0.136 / Python 3.12 / uv / Pydantic v2 / async SQLAlchemy + aiosqlite
+Backend:  FastAPI 0.136 / Python 3.12 / uv / Pydantic v2 / async SQLAlchemy + asyncpg
 AI:       Anthropic SDK ~0.104, model: claude-sonnet-4-5 (configurable)
 Frontend: React 19 / Vite 6 / JavaScript JSX / Tailwind v4 / shadcn new-york-v4
-DB:       SQLite (file: backend/data/metahire.db)
+DB:       PostgreSQL (Supabase session pooler)
 ```
 
 ## Quick Start
@@ -35,7 +35,7 @@ DB:       SQLite (file: backend/data/metahire.db)
 ```bash
 # Backend
 cd backend && uv sync && cp .env.example .env
-# edit .env → set ANTHROPIC_API_KEY
+# edit .env → set ANTHROPIC_API_KEY and DATABASE_URL (Supabase session pooler)
 uv run uvicorn app.main:app --reload --port 8000
 
 # Frontend

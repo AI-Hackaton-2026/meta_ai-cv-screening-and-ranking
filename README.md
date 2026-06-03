@@ -34,7 +34,7 @@ MetaHire helps recruiters prioritize candidates faster. Create a job from a desc
 ```bash
 cd backend
 uv sync
-cp .env.example .env   # set ANTHROPIC_API_KEY=sk-ant-...
+cp .env.example .env   # set ANTHROPIC_API_KEY and DATABASE_URL (Supabase)
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -62,7 +62,7 @@ Copy `backend/.env.example` → `backend/.env`.
 | `CLAUDE_MODEL`      | No       | Default `claude-sonnet-4-5`                    |
 | `MAX_CONCURRENCY`   | No       | Parallel scoring tasks (default `5`)           |
 | `CORS_ORIGINS`      | No       | Frontend origin(s), comma-separated            |
-| `DATABASE_URL`      | No       | Default SQLite under `backend/data/`           |
+| `DATABASE_URL`      | Yes      | Supabase Postgres session pooler URL (see `docs/setup.md`) |
 | `SUPABASE_*`        | No       | Optional private storage for original CV files |
 
 See [docs/setup.md](docs/setup.md) for Supabase setup and troubleshooting.
@@ -97,6 +97,6 @@ cd frontend && npm run lint && npm run build
 | Layer    | Technology                                       |
 | -------- | ------------------------------------------------ |
 | AI       | Anthropic Claude (structured outputs)            |
-| Backend  | FastAPI · Python 3.12 · uv · SQLite (async)      |
+| Backend  | FastAPI · Python 3.12 · uv · PostgreSQL (Supabase) |
 | Frontend | React 19 · Vite 6 · TanStack Query · Tailwind v4 |
 | CI       | GitHub Actions (ruff, pyright, eslint, build)    |
