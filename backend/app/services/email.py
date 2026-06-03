@@ -65,9 +65,7 @@ async def send_interview_invitation(
                     {
                         "ContentType": "text/calendar",
                         "Filename": "interview-invitation.ics",
-                        "Base64Content": base64.b64encode(
-                            ics.encode("utf-8")
-                        ).decode("ascii"),
+                        "Base64Content": base64.b64encode(ics.encode("utf-8")).decode("ascii"),
                     }
                 ],
             }
@@ -218,12 +216,7 @@ def _ics_dt(value: datetime) -> str:
 
 
 def _ics_escape(value: str) -> str:
-    return (
-        value.replace("\\", "\\\\")
-        .replace(";", "\\;")
-        .replace(",", "\\,")
-        .replace("\n", "\\n")
-    )
+    return value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 
 
 def _message_custom_id(candidate_id: int, email: str, scheduled_at: datetime) -> str:

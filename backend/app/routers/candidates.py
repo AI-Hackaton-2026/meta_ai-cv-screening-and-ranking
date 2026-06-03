@@ -124,9 +124,7 @@ async def send_interview_invite(
     session: AsyncSession = Depends(get_session),
 ) -> InterviewInviteOut:
     result = await session.execute(
-        select(Candidate)
-        .options(selectinload(Candidate.job))
-        .where(Candidate.id == candidate_id)
+        select(Candidate).options(selectinload(Candidate.job)).where(Candidate.id == candidate_id)
     )
     candidate = result.scalar_one_or_none()
     if not candidate:
