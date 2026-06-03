@@ -27,7 +27,6 @@ metahire/
 │   │       ├── claude.py   # Claude API calls (structured outputs)
 │   │       ├── scoring.py  # weighted scoring + batch orchestrator
 │   │       └── export.py   # CSV + PDF export
-│   ├── data/             # SQLite DB (gitignored)
 │   ├── .env.example      # Template — copy to .env and fill in
 │   └── pyproject.toml    # uv project file
 │
@@ -61,7 +60,7 @@ metahire/
 | Backend lang | Python 3.12 | Best Claude SDK + PDF parsing ecosystem |
 | Package manager | uv | Fast, reproducible lockfile |
 | Web framework | FastAPI | Async-native, auto OpenAPI docs |
-| Database | SQLite (async) | Zero infra, demo-friendly |
+| Database | PostgreSQL via Supabase (asyncpg) | Session pooler on Render and local dev |
 | LLM | Claude (sonnet-4-5) | Structured output via `output_format` |
 | Frontend | React 19 + Vite 6 JS | Modern, no TS complexity |
 | Styling | Tailwind v4 + shadcn/ui | Brand-token compatible |
@@ -79,7 +78,7 @@ cd backend
 # Setup (first time)
 uv sync
 cp .env.example .env
-# → fill in ANTHROPIC_API_KEY in .env
+# → fill in ANTHROPIC_API_KEY and DATABASE_URL in .env
 
 # Run
 uv run uvicorn app.main:app --reload --port 8000
@@ -118,11 +117,11 @@ npm run lint
 All in `backend/.env` (never commit real values):
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...   # Required — app will not start without this
+ANTHROPIC_API_KEY=sk-ant-...   # Required
+DATABASE_URL=postgresql://...  # Required — Supabase session pooler (see docs/setup.md)
 CLAUDE_MODEL=claude-sonnet-4-5  # Optional — change to experiment
 MAX_CONCURRENCY=5               # Concurrent CV scoring tasks
 CORS_ORIGINS=http://localhost:5173
-DATABASE_URL=sqlite+aiosqlite:///./data/metahire.db
 ```
 
 ---

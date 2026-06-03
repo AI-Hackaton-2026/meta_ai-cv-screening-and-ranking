@@ -14,7 +14,7 @@ FastAPI (async)
   services/scoring.py   Weighted overall score + batch orchestration
   services/parsing.py   PDF/DOCX → text
         │
-        ├── SQLite (jobs, requirements, candidates, evaluations)
+        ├── PostgreSQL / Supabase (jobs, requirements, candidates, evaluations)
         └── Anthropic API (Claude)
 ```
 

@@ -3,7 +3,6 @@ MetaHire API — application entry point.
 """
 
 import logging
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -22,9 +21,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    db_path = settings.database_url.replace("sqlite+aiosqlite:///", "")
-    os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
-
     await create_tables()
     logger.info("MetaHire API started. Model: %s", settings.claude_model)
     yield

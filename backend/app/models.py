@@ -1,30 +1,15 @@
 """
 SQLAlchemy ORM models. Business logic lives in services/, not here.
-JSON columns store Python dicts/lists serialised as TEXT.
+JSON columns use PostgreSQL JSONB (dict/list in Python).
 """
 
-import json
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import TypeDecorator
 
 from app.db import Base
-
-
-class JSONType(TypeDecorator):
-    """Stores Python objects as JSON text in SQLite."""
-
-    impl = Text
-    cache_ok = True
-
-    def process_bind_param(self, value: Any, dialect: Any) -> str | None:
-        return json.dumps(value) if value is not None else None
-
-    def process_result_value(self, value: Any, dialect: Any) -> Any:
-        return json.loads(value) if value is not None else None
 
 
 def _utcnow() -> datetime:
@@ -40,7 +25,7 @@ class Job(Base):
 
     extraction_status: Mapped[str] = mapped_column(String(20), default="pending")
     extraction_error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    category_weights: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
+    category_weights: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -100,11 +85,11 @@ class Evaluation(Base):
     )
 
     overall_score: Mapped[float] = mapped_column(Float, nullable=False)
-    category_scores: Mapped[dict] = mapped_column(JSONType, nullable=False)
-    requirement_matches: Mapped[list] = mapped_column(JSONType, nullable=False)
+    category_scores: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    requirement_matches: Mapped[list] = mapped_column(JSONB, nullable=False)
 
-    strengths: Mapped[list] = mapped_column(JSONType, nullable=False)
-    gaps: Mapped[list] = mapped_column(JSONType, nullable=False)
+    strengths: Mapped[list] = mapped_column(JSONB, nullable=False)
+    gaps: Mapped[list] = mapped_column(JSONB, nullable=False)
 
     recommendation: Mapped[str] = mapped_column(String(20), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)

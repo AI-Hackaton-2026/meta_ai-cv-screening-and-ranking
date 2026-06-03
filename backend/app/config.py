@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +12,18 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     claude_model: str = "claude-sonnet-4-5"
     max_concurrency: int = 5
-    database_url: str = "sqlite+aiosqlite:///./data/metahire.db"
+    database_url: str
+    database_ssl_insecure: bool = False
+
+    @field_validator("database_url")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+asyncpg://", 1)
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return value
+
     cors_origins: str = "http://localhost:5173"
     supabase_url: str | None = None
     supabase_service_role_key: str | None = None
