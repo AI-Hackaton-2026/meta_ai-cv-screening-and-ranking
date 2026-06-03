@@ -13,7 +13,10 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CreateJobDialog } from "@/components/CreateJobDialog";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useJobs } from "@/lib/queries";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useInfiniteJobs } from "@/lib/queries";
+
+const JOBS_PAGE_SIZE = 12;
 
 const EXTRACTION_STATUS_BADGE = {
   pending: { label: "Setting up", variant: "muted" },
@@ -26,8 +29,21 @@ export default function JobsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
-  const { data: jobs, isLoading } = useJobs({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteJobs({
     search: debouncedQuery.trim() || undefined,
+    limit: JOBS_PAGE_SIZE,
+  });
+  const jobs = data?.pages.flatMap((page) => page.items) ?? [];
+  const loadMoreRef = useInfiniteScroll({
+    enabled: Boolean(hasNextPage),
+    isLoading: isFetchingNextPage,
+    onLoadMore: fetchNextPage,
   });
 
   return (
@@ -60,17 +76,27 @@ export default function JobsPage() {
           <span className="mh-spinner" />
           <span className="text-sm">Loading jobs…</span>
         </div>
-      ) : jobs?.length === 0 ? (
+      ) : jobs.length === 0 ? (
         <EmptyState
           query={query}
           onNew={() => setShowCreate(true)}
         />
       ) : (
-        <div className="mh-jobgrid">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-        </div>
+        <>
+          <div className="mh-jobgrid">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
+          <div ref={loadMoreRef} className="mh-jobs-sentinel">
+            {isFetchingNextPage && (
+              <div className="flex items-center gap-2 text-[var(--muted-foreground)]">
+                <span className="mh-spinner" />
+                <span className="text-sm">Loading more jobs…</span>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       <CreateJobDialog open={showCreate} onClose={() => setShowCreate(false)} />
