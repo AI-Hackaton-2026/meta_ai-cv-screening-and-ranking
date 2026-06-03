@@ -70,8 +70,11 @@ Instructions:
    each category, write a distinct rationale that explains only that category's \
    score. Do not reuse the same rationale across categories.
 3. Keep category signals separate:
-   - skills: exact technical stack, tools, frameworks, APIs, and transferable \
-     technical skills.
+   - skills: weight demonstrated use (mentioned in project/role context with \
+     outcomes) over bare keyword presence. Penalise CVs that list technologies \
+     without any context of how they were used. Look for evidence of depth: \
+     architecture decisions, scale, production ownership, or specific tooling \
+     choices that show real familiarity rather than surface-level enumeration.
    - experience: years, seniority, production ownership, architectural scope, \
      backend complexity, team leadership, mentoring, and delivery track record. \
      Do not collapse this score just because the candidate used a different \
