@@ -942,6 +942,38 @@ body {
   color: var(--foreground);
 }
 
+.mh-role-info-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  vertical-align: 2px;
+  border: 1px solid rgba(107, 105, 255, 0.28);
+  border-radius: var(--radius-pill);
+  background: var(--primary-light);
+  color: var(--primary);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.mh-role-info-button:hover {
+  background: rgba(107, 105, 255, 0.14);
+  border-color: rgba(107, 105, 255, 0.55);
+  box-shadow: 0 6px 14px rgba(107, 105, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.mh-role-info-button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .mh-inline-processing {
   display: inline-flex;
   align-items: center;
