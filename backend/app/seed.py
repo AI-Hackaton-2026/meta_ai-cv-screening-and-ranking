@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app.db import AsyncSessionLocal, create_tables
 from app.models import Candidate, Job
+from app.services.contact import extract_email
 from app.services.parsing import extract_text
 
 logger = logging.getLogger(__name__)
@@ -102,6 +103,7 @@ async def seed() -> None:
                         candidate = Candidate(
                             job_id=job_id,
                             name=name,
+                            email=extract_email(text),
                             original_filename=cv_file.name,
                             raw_text=text,
                             status="pending",

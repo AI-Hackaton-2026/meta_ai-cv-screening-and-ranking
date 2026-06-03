@@ -127,6 +127,16 @@ export function useRescore(candidateId) {
   });
 }
 
+export function useScheduleInterview(candidateId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => candidatesApi.scheduleInterview(candidateId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.candidate(candidateId) });
+    },
+  });
+}
+
 export function useRescoreForJob(jobId) {
   const qc = useQueryClient();
   return useMutation({
