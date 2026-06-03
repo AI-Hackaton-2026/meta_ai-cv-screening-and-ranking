@@ -22,8 +22,6 @@ from app.config import settings
 from app.schemas import (
     DEFAULT_WEIGHTS,
     VALID_CATEGORIES,
-    CategoryScore,
-    CategoryScoreSet,
     EvaluationResult,
     ExtractionResult,
     PromptEvaluationResult,
@@ -73,7 +71,9 @@ CANDIDATE CV:
 Instructions:
 1. Extract the candidate's full name from the CV.
 2. Score the candidate on each category (0-100). Be critical and calibrated \
-   — 90+ is exceptional, 70-89 strong, 50-69 adequate, below 50 weak.
+   — 90+ is exceptional, 70-89 strong, 50-69 adequate, below 50 weak. For \
+   each category, write a distinct rationale that explains only that category's \
+   score. Do not reuse the same rationale across categories.
 3. Keep category signals separate:
    - skills: exact technical stack, tools, frameworks, APIs, and transferable \
      technical skills.
@@ -106,11 +106,23 @@ conversational text outside the JSON block.
 
 {{
   "candidate_name": "Full Name",
-  "scores": {{
-    "skills": 0-100,
-    "experience": 0-100,
-    "education": 0-100,
-    "domain_fit": 0-100
+  "category_scores": {{
+    "skills": {{
+      "score": 0-100,
+      "rationale": "Skills-specific rationale."
+    }},
+    "experience": {{
+      "score": 0-100,
+      "rationale": "Experience-specific rationale."
+    }},
+    "education": {{
+      "score": 0-100,
+      "rationale": "Education-specific rationale."
+    }},
+    "domain_fit": {{
+      "score": 0-100,
+      "rationale": "Domain-fit-specific rationale."
+    }}
   }},
   "requirements_analysis": [
     {{
@@ -158,20 +170,10 @@ def _coerce_requirement_id(requirement_id: int | str) -> int:
     return int(match.group())
 
 
-def _category_rationale(prompt_result: PromptEvaluationResult) -> str:
-    return f"See evaluation reasoning: {prompt_result.evaluation_reasoning}"
-
-
 def _to_evaluation_result(prompt_result: PromptEvaluationResult) -> EvaluationResult:
-    rationale = _category_rationale(prompt_result)
     return EvaluationResult(
         candidate_name=prompt_result.candidate_name,
-        category_scores=CategoryScoreSet(
-            skills=CategoryScore(score=prompt_result.scores.skills, rationale=rationale),
-            experience=CategoryScore(score=prompt_result.scores.experience, rationale=rationale),
-            education=CategoryScore(score=prompt_result.scores.education, rationale=rationale),
-            domain_fit=CategoryScore(score=prompt_result.scores.domain_fit, rationale=rationale),
-        ),
+        category_scores=prompt_result.category_scores,
         requirement_matches=[
             RequirementMatch(
                 requirement_id=_coerce_requirement_id(item.requirement_id),
