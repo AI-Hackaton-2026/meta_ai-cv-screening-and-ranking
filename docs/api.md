@@ -1,133 +1,36 @@
-# API Reference
+# API reference
 
-Full interactive documentation is available at **http://localhost:8000/docs** (Swagger UI) when the backend is running.
+Interactive docs: **http://localhost:8000/docs** when the backend is running.
 
-## Base URL
-
-- Development: `http://localhost:8000`
-- Via Vite proxy: `http://localhost:5173/api`
-
----
+- **Dev base URL:** `http://localhost:8000`
+- **Via Vite proxy:** `http://localhost:5173/api` → backend root
 
 ## Jobs
 
-### `POST /jobs`
-Create a new job. Triggers async requirement extraction in background.
-
-**Body:** `{ "title": "string", "description": "string" }`
-
-**Response 201:** Job object with `id`, `extraction_status: "pending"`, etc.
-
----
-
-### `GET /jobs`
-List all jobs with candidate counts.
-
-**Response 200:** Array of `{ id, title, extraction_status, created_at, candidate_count }`
-
----
-
-### `GET /jobs/{id}`
-Full job detail including requirements.
-
-**Response 200:** Job object with nested `requirements[]`
-
----
-
-### `PATCH /jobs/{id}`
-Update job title, description, or category weights.
-
-**Body:** Any subset of `{ "title", "description", "category_weights" }`
-
-Note: `category_weights` must sum to 100 or returns 422.
-
----
-
-### `DELETE /jobs/{id}`
-Delete a job and all its candidates (cascade).
-
-**Response 204**
-
----
-
-### `POST /jobs/{id}/candidates`
-Upload one or more CV files for scoring.
-
-**Content-Type:** `multipart/form-data`
-**Field:** `files` (one or more PDF/DOCX files)
-
-**Response 202:**
-```json
-{
-  "queued": 3,
-  "candidate_ids": [1, 2, 3],
-  "errors": []
-}
-```
-
----
-
-### `GET /jobs/{id}/candidates`
-Leaderboard — sorted by overall_score descending. Poll this for live updates.
-
-**Response 200:** Array of leaderboard entries (no `raw_text`)
-
----
-
-### `GET /jobs/{id}/status`
-Batch processing progress.
-
-**Response 200:** `{ "total": 5, "pending": 1, "processing": 2, "done": 2, "error": 0 }`
-
----
-
-### `GET /jobs/{id}/export?format=csv`
-Download shortlist CSV.
-
-**Response 200:** `text/csv` attachment
-
----
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/jobs` | Create job; starts requirement extraction |
+| `GET` | `/jobs` | List jobs (paginated; supports `search`, `cursor`, `limit`) |
+| `GET` | `/jobs/{id}` | Job + requirements |
+| `PATCH` | `/jobs/{id}` | Update title, description, or `category_weights` (must sum to 100) |
+| `DELETE` | `/jobs/{id}` | Delete job and candidates |
+| `POST` | `/jobs/{id}/candidates` | Upload CVs (`multipart/form-data`, field `files`). **409** if extraction not finished |
+| `GET` | `/jobs/{id}/candidates` | Leaderboard (paginated; poll while scoring) |
+| `GET` | `/jobs/{id}/status` | Batch counts: `pending`, `processing`, `done`, `error` |
+| `GET` | `/jobs/{id}/export?format=csv` | Shortlist CSV download |
 
 ## Candidates
 
-### `GET /candidates/{id}`
-Full candidate detail including evaluation.
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/candidates/{id}` | Full detail + evaluation |
+| `POST` | `/candidates/{id}/rescore` | Re-queue Claude scoring |
+| `POST` | `/candidates/{id}/interviews` | Send interview invite (requires Mailjet env) |
+| `GET` | `/candidates/{id}/cv-preview` | CV preview (PDF inline / DOCX as text) |
+| `GET` | `/candidates/{id}/export?format=pdf` | Evaluation PDF download |
 
-**Response 200:** Candidate with nested `evaluation` object
+## Meta
 
----
-
-### `POST /candidates/{id}/rescore`
-Re-run Claude scoring for a candidate (e.g. after weight changes).
-
-**Response 202:** `{ "message": "Rescore queued", "candidate_id": 1 }`
-
----
-
-### `GET /candidates/{id}/cv-preview`
-Preview the stored original CV. PDFs stream inline; DOCX files return extracted text.
-
-**Response 200:** Browser-friendly CV preview
-
----
-
-### `GET /candidates/{id}/export?format=pdf`
-Download PDF evaluation report.
-
-**Response 200:** `application/pdf` attachment
-
----
-
-## Utility
-
-### `GET /health`
-Health check.
-
-**Response 200:** `{ "status": "ok", "model": "claude-sonnet-4-5" }`
-
----
-
-### `POST /seed`
-Load sample jobs and CVs for demo.
-
-**Response 202:** `{ "message": "Seeding started in background" }`
+| Method | Path | Description |
+|---|---|---|
+| `GET` / `HEAD` | `/health` | Health check |

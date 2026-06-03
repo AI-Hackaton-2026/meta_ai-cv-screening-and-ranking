@@ -299,7 +299,12 @@ async def upload_candidates(
     Upload 1..N CV files (PDF/DOCX). Parses text, creates Candidate rows,
     and enqueues background scoring. Returns immediately with candidate IDs.
     """
-    await _get_job_or_404(job_id, session)
+    job = await _get_job_or_404(job_id, session)
+    if job.extraction_status != "done":
+        raise HTTPException(
+            status_code=409,
+            detail="Requirement extraction must finish before uploading CVs.",
+        )
 
     if not files:
         raise HTTPException(status_code=422, detail="At least one file is required")

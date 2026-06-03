@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -227,7 +227,7 @@ export default function CandidatePage() {
               </div>
             </Card>
 
-            <div className="mh-stack">
+            <div className="mh-stack mh-cand-aside">
               <div className="mh-scorecard">
                 <div>
                   <p className="mh-scorecard-label">Overall score</p>
@@ -386,8 +386,14 @@ function CategoryRow({ cat, data, index }) {
   );
 }
 
-function Radar({ scores, size = 330 }) {
+const RADAR_SIZE = 400;
+const RADAR_PAD = 76;
+const RADAR_LABEL_OUTSET = 1.34;
+
+function Radar({ scores, size = RADAR_SIZE }) {
+  const fillId = useId().replace(/:/g, "");
   const [progress, setProgress] = useState(0);
+  const [hovered, setHovered] = useState(null);
 
   useEffect(() => {
     let frame;
@@ -412,7 +418,8 @@ function Radar({ scores, size = 330 }) {
 
   const cx = size / 2;
   const cy = size / 2;
-  const radius = size / 2 - 78;
+  const radius = size / 2 - 58;
+  const viewSize = size + RADAR_PAD * 2;
   const axes = CAT_ORDER.map((key, index) => {
     const angle = -Math.PI / 2 + (index * 2 * Math.PI) / CAT_ORDER.length;
     return { key, angle, x: Math.cos(angle), y: Math.sin(angle) };
@@ -428,27 +435,34 @@ function Radar({ scores, size = 330 }) {
     })
     .join(" ");
 
+  const hoveredAxis = hovered ? axes.find((axis) => axis.key === hovered) : null;
+  const hoveredValue = hovered ? (scores?.[hovered]?.score ?? 0) : 0;
+  const hoveredPoint =
+    hoveredAxis && point((hoveredValue / 100) * progress, hoveredAxis);
+
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`-132 -52 ${size + 264} ${size + 104}`}
-      aria-hidden="true"
-      className="mh-radar-svg"
-    >
-      <defs>
-        <linearGradient id="mh-radar-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="var(--chart-3)" stopOpacity="0.22" />
-        </linearGradient>
-      </defs>
-      {[0.25, 0.5, 0.75, 1].map((fraction) => (
-        <polygon
-          key={fraction}
-          points={axes.map((axis) => point(fraction, axis).join(",")).join(" ")}
+    <div className="mh-radar-chart">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`-${RADAR_PAD} -${RADAR_PAD} ${viewSize} ${viewSize}`}
+        className="mh-radar-svg"
+        role="img"
+        aria-label="Category score radar chart"
+      >
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.38" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.1" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75, 1].map((fraction) => (
+          <polygon
+            key={fraction}
+            points={axes.map((axis) => point(fraction, axis).join(",")).join(" ")}
           fill="none"
           stroke="var(--border)"
-          strokeWidth="1"
+          strokeWidth="2"
         />
       ))}
       {axes.map((axis) => {
@@ -461,52 +475,111 @@ function Radar({ scores, size = 330 }) {
             x2={x}
             y2={y}
             stroke="var(--border)"
-            strokeWidth="1"
+            strokeWidth="2"
           />
-        );
-      })}
-      <polygon
-        points={polygon}
-        fill="url(#mh-radar-fill)"
-        stroke="var(--chart-1)"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-      />
-      {axes.map((axis) => {
-        const value = scores?.[axis.key]?.score ?? 0;
-        const [x, y] = point((value / 100) * progress, axis);
-        return (
-          <circle
-            key={axis.key}
-            cx={x}
-            cy={y}
-            r="3.5"
-            fill="var(--chart-1)"
-            stroke="#fff"
-            strokeWidth="1.5"
-          />
-        );
-      })}
-      {axes.map((axis) => {
-        const [x, y] = point(1.36, axis);
-        const textAnchor =
-          axis.key === "domain_fit" ? "end" : axis.key === "experience" ? "start" : "middle";
-        return (
-          <text
-            key={axis.key}
-            x={x}
-            y={y}
-            textAnchor={textAnchor}
-            dominantBaseline="middle"
-            fontSize="12"
-            fontWeight="600"
-            fill="var(--muted-foreground)"
+          );
+        })}
+        <polygon
+          points={polygon}
+          fill={`url(#${fillId})`}
+          stroke="var(--primary)"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
+        {axes.map((axis) => {
+          const value = scores?.[axis.key]?.score ?? 0;
+          const [x, y] = point((value / 100) * progress, axis);
+          const active = hovered === axis.key;
+          return (
+            <g key={axis.key}>
+              <circle
+                className="mh-radar-hit"
+                cx={x}
+                cy={y}
+                r="16"
+                fill="transparent"
+                tabIndex={0}
+                role="button"
+                aria-label={`${CAT_META[axis.key].label}: ${formatScore(value)} out of 100`}
+                onMouseEnter={() => setHovered(axis.key)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(axis.key)}
+                onBlur={() => setHovered(null)}
+              />
+              <circle
+                cx={x}
+                cy={y}
+                r={active ? 6.5 : 5}
+                fill="var(--primary)"
+                stroke="var(--card)"
+                strokeWidth="2"
+                pointerEvents="none"
+                className={active ? "mh-radar-point is-active" : "mh-radar-point"}
+              />
+            </g>
+          );
+        })}
+        {hoveredPoint && (
+          <g
+            className="mh-radar-tooltip"
+            transform={`translate(${hoveredPoint[0]}, ${hoveredPoint[1]})`}
+            pointerEvents="none"
           >
-            {CAT_META[axis.key].radarLabel}
-          </text>
-        );
-      })}
-    </svg>
+            <rect
+              x="-88"
+              y="-50"
+              width="176"
+              height="44"
+              rx="10"
+              fill="var(--card)"
+              stroke="var(--border)"
+              strokeWidth="1"
+            />
+            <text
+              x="0"
+              y="-32"
+              textAnchor="middle"
+              fontSize="12"
+              fontWeight="600"
+              fill="var(--muted-foreground)"
+            >
+              {CAT_META[hovered].label}
+            </text>
+            <text
+              x="0"
+              y="-12"
+              textAnchor="middle"
+              fontSize="16"
+              fontWeight="700"
+              fill="var(--primary)"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {formatScore(hoveredValue)}
+            </text>
+          </g>
+        )}
+        {axes.map((axis) => {
+          const [x, y] = point(RADAR_LABEL_OUTSET, axis);
+          const textAnchor =
+            axis.key === "domain_fit" ? "end" : axis.key === "experience" ? "start" : "middle";
+          const active = hovered === axis.key;
+          return (
+            <text
+              key={`${axis.key}-label`}
+              x={x}
+              y={y}
+              textAnchor={textAnchor}
+              dominantBaseline="middle"
+              fontSize="13"
+              fontWeight="600"
+              fill={active ? "var(--primary)" : "var(--muted-foreground)"}
+            >
+              {CAT_META[axis.key].radarLabel}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
