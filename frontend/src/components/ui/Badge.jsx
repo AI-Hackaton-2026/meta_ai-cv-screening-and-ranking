@@ -11,14 +11,7 @@ const variants = {
 
 export function Badge({ children, variant = "default", className, ...props }) {
   return (
-    <span
-      className={cn(
-        "mh-badge",
-        variants[variant] ?? variants.default,
-        className
-      )}
-      {...props}
-    >
+    <span className={cn("mh-badge", variants[variant] ?? variants.default, className)} {...props}>
       {children}
     </span>
   );

@@ -74,7 +74,6 @@ class JobListPage(BaseModel):
     search: str | None = None
 
 
-
 class CategoryScoreOut(BaseModel):
     score: float
     rationale: str
@@ -193,7 +192,6 @@ class InterviewInviteOut(BaseModel):
     provider_message_id: str
     candidate_id: int
     email: str
-
 
 
 class RequirementItem(BaseModel):

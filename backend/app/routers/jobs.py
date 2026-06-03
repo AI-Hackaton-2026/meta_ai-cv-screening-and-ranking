@@ -277,7 +277,6 @@ async def delete_job(
     await session.commit()
 
 
-
 @router.post("/{job_id}/candidates", status_code=202)
 async def upload_candidates(
     job_id: int,
@@ -392,7 +391,6 @@ async def clear_candidates(
     await session.commit()
 
     return {"deleted": deleted_count}
-
 
 
 @router.get("/{job_id}/candidates", response_model=LeaderboardPage)
@@ -527,7 +525,6 @@ async def get_batch_status(
         done=counts.get("done", 0),
         error=counts.get("error", 0),
     )
-
 
 
 @router.get("/{job_id}/export")

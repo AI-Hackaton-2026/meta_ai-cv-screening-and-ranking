@@ -6,17 +6,14 @@ export function ScoreBar({ score, showLabel = true, height = 6 }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div
-        className="mh-track"
-        style={{ height }}
-      >
-        <div
-          className="mh-fill"
-          style={{ width: `${pct}%`, background: color }}
-        />
+      <div className="mh-track" style={{ height }}>
+        <div className="mh-fill" style={{ width: `${pct}%`, background: color }} />
       </div>
       {showLabel && (
-        <span className="text-xs font-semibold mono" style={{ color, minWidth: "2.5rem", textAlign: "right" }}>
+        <span
+          className="text-xs font-semibold mono"
+          style={{ color, minWidth: "2.5rem", textAlign: "right" }}
+        >
           {formatScore(score)}
         </span>
       )}
@@ -27,10 +24,7 @@ export function ScoreBar({ score, showLabel = true, height = 6 }) {
 export function ScorePill({ score }) {
   const color = scoreColor(score);
   return (
-    <span
-      className="mh-scorepill mono"
-      style={{ background: color }}
-    >
+    <span className="mh-scorepill mono" style={{ background: color }}>
       {formatScore(score)}
     </span>
   );

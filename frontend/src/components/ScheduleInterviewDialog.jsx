@@ -1,24 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  CalendarDays,
-  Clock3,
-  Eye,
-  Mail,
-  MapPin,
-  Send,
-  UserRound,
-  Video,
-  X,
-} from "lucide-react";
+import { CalendarDays, Clock3, Eye, Mail, MapPin, Send, UserRound, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 const DURATIONS = [30, 45, 60, 90];
 
 export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, onSend, sending }) {
-  const timezone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    []
-  );
+  const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
   const defaults = useMemo(() => buildDefaults(candidate, jobTitle), [candidate, jobTitle]);
   const [form, setForm] = useState(defaults);
 
@@ -83,9 +70,7 @@ export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, on
             <h2 id="schedule-interview-title" className="mh-modal-title">
               Schedule interview
             </h2>
-            <p className="mh-modal-subtitle">
-              Prepare an invitation for {candidate.name}.
-            </p>
+            <p className="mh-modal-subtitle">Prepare an invitation for {candidate.name}.</p>
           </div>
         </div>
 
@@ -191,12 +176,7 @@ export function ScheduleInterviewDialog({ open, candidate, jobTitle, onClose, on
             />
           </Field>
 
-          <EmailPreview
-            candidate={candidate}
-            jobTitle={jobTitle}
-            form={form}
-            timezone={timezone}
-          />
+          <EmailPreview candidate={candidate} jobTitle={jobTitle} form={form} timezone={timezone} />
 
           <div className="mh-modal-foot">
             <Button type="button" variant="outline" onClick={onClose} disabled={sending}>

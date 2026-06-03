@@ -22,13 +22,7 @@ export default function JobsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-  } = useInfiniteJobs({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteJobs({
     search: debouncedQuery.trim() || undefined,
     limit: JOBS_PAGE_SIZE,
   });
@@ -44,9 +38,7 @@ export default function JobsPage() {
       <div className="mh-pagehead">
         <div>
           <h1 className="mh-page-title">Job openings</h1>
-          <p className="mh-page-sub">
-            Create a job, upload CVs, and let AI rank your candidates.
-          </p>
+          <p className="mh-page-sub">Create a job, upload CVs, and let AI rank your candidates.</p>
         </div>
         <div className="mh-row mh-jobs-actions">
           <div className="mh-search mh-jobs-search">
@@ -70,10 +62,7 @@ export default function JobsPage() {
           <span className="text-sm">Loading jobs…</span>
         </div>
       ) : jobs.length === 0 ? (
-        <EmptyState
-          query={query}
-          onNew={() => setShowCreate(true)}
-        />
+        <EmptyState query={query} onNew={() => setShowCreate(true)} />
       ) : (
         <>
           <div className="mh-jobgrid">

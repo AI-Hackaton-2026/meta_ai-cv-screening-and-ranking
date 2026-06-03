@@ -39,9 +39,7 @@ export function importancesToWeights(importances) {
   const floored = exactPcts.map((e) => ({ ...e, floored: Math.floor(e.exact) }));
   const remainder = 100 - floored.reduce((s, e) => s + e.floored, 0);
 
-  const ranked = [...floored].sort(
-    (a, b) => (b.exact - b.floored) - (a.exact - a.floored)
-  );
+  const ranked = [...floored].sort((a, b) => b.exact - b.floored - (a.exact - a.floored));
   ranked.forEach((item, i) => {
     if (i < remainder) item.floored += 1;
   });

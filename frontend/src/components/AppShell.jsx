@@ -44,9 +44,7 @@ export function AppShell({ children }) {
         </nav>
       </header>
 
-      <main className={cn("mh-main flex-1 w-full", isWidePage && "mh-main-wide")}>
-        {children}
-      </main>
+      <main className={cn("mh-main flex-1 w-full", isWidePage && "mh-main-wide")}>{children}</main>
     </div>
   );
 }
@@ -55,11 +53,7 @@ function NavLink({ to, active, sectionActive, children }) {
   return (
     <Link
       to={to}
-      className={cn(
-        "mh-navlink",
-        active && "is-active",
-        sectionActive && "is-section-active"
-      )}
+      className={cn("mh-navlink", active && "is-active", sectionActive && "is-section-active")}
     >
       {children}
     </Link>
