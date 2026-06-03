@@ -21,6 +21,7 @@ from app.config import settings
 from app.db import AsyncSessionLocal, get_session
 from app.models import Candidate, Evaluation, Job, Requirement
 from app.schemas import (
+    VALID_CATEGORIES,
     BatchStatusOut,
     CategoryScoreOut,
     JobCreate,
@@ -231,6 +232,14 @@ async def update_job(
     if body.description is not None:
         job.description = body.description
     if body.category_weights is not None:
+        categories = set(body.category_weights)
+        if categories != VALID_CATEGORIES:
+            raise HTTPException(
+                status_code=422,
+                detail="Weights must include exactly: skills, experience, education, domain_fit",
+            )
+        if any(weight < 0 for weight in body.category_weights.values()):
+            raise HTTPException(status_code=422, detail="Weights cannot be negative")
         total = sum(body.category_weights.values())
         if total != 100:
             raise HTTPException(status_code=422, detail="Weights must sum to 100")

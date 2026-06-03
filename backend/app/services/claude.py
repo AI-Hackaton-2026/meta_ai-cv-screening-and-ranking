@@ -13,6 +13,7 @@ deploy. All calls are retried once on transient API errors.
 """
 
 import logging
+import re
 from typing import cast
 
 import anthropic
@@ -20,8 +21,11 @@ import anthropic
 from app.config import settings
 from app.schemas import (
     DEFAULT_WEIGHTS,
+    VALID_CATEGORIES,
     EvaluationResult,
     ExtractionResult,
+    PromptEvaluationResult,
+    RequirementMatch,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,21 +71,72 @@ CANDIDATE CV:
 Instructions:
 1. Extract the candidate's full name from the CV.
 2. Score the candidate on each category (0-100). Be critical and calibrated \
-   — 90+ is exceptional, 70-89 strong, 50-69 adequate, below 50 weak.
-3. For EACH requirement listed above, determine:
-   - met: CV clearly demonstrates this requirement (quote the evidence)
-   - partial: CV suggests partial match (quote the best available evidence)
-   - unmet: No credible evidence found (quote as empty string or "Not found")
-4. List 3-5 key strengths specific to this role.
-5. List 3-5 notable gaps or concerns specific to this role.
-6. Give a recommendation:
-   - advance: Strong fit, recommend moving to next round
-   - hold: Borderline, worth reviewing with hiring manager
-   - reject: Significant gaps, does not meet minimum bar
-7. Write a 2-3 sentence recruiter summary explaining the recommendation.
-8. Write a full reasoning paragraph explaining your evaluation process.
+   — 90+ is exceptional, 70-89 strong, 50-69 adequate, below 50 weak. For \
+   each category, write a distinct rationale that explains only that category's \
+   score. Do not reuse the same rationale across categories.
+3. Keep category signals separate:
+   - skills: exact technical stack, tools, frameworks, APIs, and transferable \
+     technical skills.
+   - experience: years, seniority, production ownership, architectural scope, \
+     backend complexity, team leadership, mentoring, and delivery track record. \
+     Do not collapse this score just because the candidate used a different \
+     language or framework; apply exact-stack penalties primarily in skills and \
+     domain_fit. Compare experience by demonstrated scope, complexity, and \
+     responsibility rather than by keyword overlap.
+   - education: degrees, certifications, and relevant formal training.
+   - domain_fit: industry/domain context, product type, methodology, and \
+     role-context familiarity.
+4. When recruiter weights emphasize experience, preserve that intent by making \
+   the experience score reflect seniority and transferable backend depth rather \
+   than exact keyword overlap.
+5. For EACH requirement listed above, determine status ('met', 'partial', or \
+   'unmet') and provide the exact quoted text evidence from the CV. If unmet, \
+   quote empty string.
+6. List 3-5 key strengths specific to this role.
+7. List 3-5 notable gaps or concerns specific to this role.
+8. Provide a recommendation: 'advance', 'hold', or 'reject'.
+9. Write a 2-3 sentence recruiter summary explaining the recommendation.
+10. Write a full reasoning paragraph explaining your evaluation process.
 
 Be objective. Do not infer qualifications not stated in the CV.
+
+You must respond ONLY with a JSON object that matches the following structure \
+exactly. Do not include any markdown wrapper (like ```json) or trailing \
+conversational text outside the JSON block.
+
+{{
+  "candidate_name": "Full Name",
+  "category_scores": {{
+    "skills": {{
+      "score": 0-100,
+      "rationale": "Skills-specific rationale."
+    }},
+    "experience": {{
+      "score": 0-100,
+      "rationale": "Experience-specific rationale."
+    }},
+    "education": {{
+      "score": 0-100,
+      "rationale": "Education-specific rationale."
+    }},
+    "domain_fit": {{
+      "score": 0-100,
+      "rationale": "Domain-fit-specific rationale."
+    }}
+  }},
+  "requirements_analysis": [
+    {{
+      "requirement_id": "ID",
+      "status": "met/partial/unmet",
+      "evidence_quote": "Exact string from CV or empty string"
+    }}
+  ],
+  "key_strengths": ["strength 1", "strength 2", "strength 3"],
+  "notable_gaps": ["gap 1", "gap 2", "gap 3"],
+  "recommendation": "advance/hold/reject",
+  "recruiter_summary": "2-3 sentence summary text.",
+  "evaluation_reasoning": "Full reasoning paragraph."
+}}
 """
 
 
@@ -95,6 +150,44 @@ def _build_requirements_block(requirements: list) -> str:
         kind_label = "MUST-HAVE" if req.kind == "must_have" else "NICE-TO-HAVE"
         lines.append(f"[ID {req.id}] [{kind_label}] [{req.category.upper()}] {req.text}")
     return "\n".join(lines) if lines else "No requirements extracted yet."
+
+
+def _valid_category_weights(weights: dict[str, int]) -> bool:
+    return (
+        set(weights) == VALID_CATEGORIES
+        and sum(weights.values()) == 100
+        and all(weight >= 0 for weight in weights.values())
+    )
+
+
+def _coerce_requirement_id(requirement_id: int | str) -> int:
+    if isinstance(requirement_id, int):
+        return requirement_id
+
+    match = re.search(r"\d+", requirement_id)
+    if not match:
+        raise ValueError(f"Invalid requirement_id from Claude: {requirement_id!r}")
+    return int(match.group())
+
+
+def _to_evaluation_result(prompt_result: PromptEvaluationResult) -> EvaluationResult:
+    return EvaluationResult(
+        candidate_name=prompt_result.candidate_name,
+        category_scores=prompt_result.category_scores,
+        requirement_matches=[
+            RequirementMatch(
+                requirement_id=_coerce_requirement_id(item.requirement_id),
+                status=item.status,
+                evidence=item.evidence_quote,
+            )
+            for item in prompt_result.requirements_analysis
+        ],
+        strengths=prompt_result.key_strengths,
+        gaps=prompt_result.notable_gaps,
+        recommendation=prompt_result.recommendation,
+        summary=prompt_result.recruiter_summary,
+        reasoning=prompt_result.evaluation_reasoning,
+    )
 
 
 async def _call_claude[T](prompt: str, output_schema: type[T], attempt: int = 1) -> T:
@@ -153,7 +246,7 @@ async def extract_requirements(job: object) -> ExtractionResult:
         r.kind = "must_have"
     for r in result.nice_to_have:  # type: ignore[union-attr]
         r.kind = "nice_to_have"
-    if not result.suggested_weights:
+    if not result.suggested_weights or not _valid_category_weights(result.suggested_weights):
         result.suggested_weights = DEFAULT_WEIGHTS.copy()
     return result  # type: ignore[return-value]
 
@@ -179,5 +272,5 @@ async def evaluate_candidate(
         cv_text=cv_text[:12000],  # guard against huge CVs exceeding context
     )
 
-    result = cast(EvaluationResult, await _call_claude(prompt, EvaluationResult))
-    return result
+    result = cast(PromptEvaluationResult, await _call_claude(prompt, PromptEvaluationResult))
+    return _to_evaluation_result(result)

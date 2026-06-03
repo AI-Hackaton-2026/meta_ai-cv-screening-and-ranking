@@ -103,9 +103,9 @@ export default function CandidatePage() {
 
   const handleSendInvitation = async (payload) => {
     try {
-      const result = await scheduleInterview(payload);
+      await scheduleInterview(payload);
       setShowInterviewDialog(false);
-      toast.success(`Interview invitation sent. Provider id: ${result.provider_message_id}`);
+      toast.success("Interview invitation sent.");
     } catch (error) {
       const detail = error?.response?.data?.detail;
       toast.error(detail || "Failed to send interview invitation.");
