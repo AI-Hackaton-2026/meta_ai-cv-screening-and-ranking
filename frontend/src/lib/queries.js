@@ -85,7 +85,8 @@ export function useUpdateJob(jobId) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) => jobsApi.update(jobId, data),
-    onSuccess: () => {
+    onSuccess: (job) => {
+      qc.setQueryData(keys.job(jobId), job);
       qc.invalidateQueries({ queryKey: keys.job(jobId) });
     },
   });
