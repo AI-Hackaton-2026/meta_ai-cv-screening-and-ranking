@@ -76,18 +76,32 @@ async def _asyncpg_connect():
     if not url.host or not url.username:
         raise RuntimeError("DATABASE_URL must include host and username")
 
+    connect_kwargs = {
+        "host": url.host,
+        "port": url.port or 5432,
+        "user": url.username,
+        "password": url.password or "",
+        "database": url.database or "postgres",
+    }
+
+    ssl_attempts: list[bool | ssl.SSLContext | str] = [
+        True if factory is None else factory() for factory in _ssl_context_candidates()
+    ]
+    # libpq sslmode=require — TLS without cert verify (Supabase pooler on some cloud hosts).
+    ssl_attempts.append("require")
+    if settings.database_ssl_insecure:
+        ssl_attempts.append(_insecure_ssl_context())
+
     errors: list[Exception] = []
-    for factory in _ssl_context_candidates():
-        ssl_arg: bool | ssl.SSLContext = True if factory is None else factory()
+    for ssl_arg in ssl_attempts:
         try:
-            return await asyncpg.connect(
-                host=url.host,
-                port=url.port or 5432,
-                user=url.username,
-                password=url.password or "",
-                database=url.database or "postgres",
-                ssl=ssl_arg,
-            )
+            conn = await asyncpg.connect(**connect_kwargs, ssl=ssl_arg)
+            if ssl_arg == "require":
+                logger.warning(
+                    "Postgres connected with ssl=require (encrypted; certificate not verified). "
+                    "Typical for Supabase pooler on Render when verify-full fails."
+                )
+            return conn
         except Exception as exc:
             if not _is_ssl_verify_error(exc):
                 raise
@@ -95,13 +109,12 @@ async def _asyncpg_connect():
 
     hint = (
         " Confirm DATABASE_URL is the Supabase session pooler (port 5432). "
-        "For local dev behind a corporate proxy only, set DATABASE_SSL_INSECURE=true "
-        "(never on Render/production)."
+        "For local dev behind a corporate proxy, set DATABASE_SSL_INSECURE=true."
         if not settings.database_ssl_insecure
         else ""
     )
     raise RuntimeError(
-        f"Postgres SSL verification failed for {url.host}.{hint} Last error: {errors[-1]}"
+        f"Postgres SSL connection failed for {url.host}.{hint} Last error: {errors[-1]}"
     ) from errors[-1]
 
 
