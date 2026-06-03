@@ -53,6 +53,6 @@ app.include_router(jobs.router)
 app.include_router(candidates.router)
 
 
-@app.get("/health", tags=["meta"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["meta"])
 async def health() -> dict:
     return {"status": "ok", "model": settings.claude_model}
