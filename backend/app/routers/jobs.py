@@ -28,9 +28,8 @@ from app.schemas import (
 )
 from app.services.contact import extract_email
 from app.services.export import generate_shortlist_csv
-from app.services.scoring import compute_overall_score
 from app.services.parsing import ParsingError, extract_text
-from app.services.scoring import process_job_candidates
+from app.services.scoring import compute_overall_score, process_job_candidates
 from app.services.storage import StorageError, delete_cvs, upload_cv
 
 logger = logging.getLogger(__name__)
