@@ -1,7 +1,6 @@
 """
 Seed script: loads sample jobs and creates synthetic candidate records for demo.
 Run directly: uv run python -m app.seed
-Or via API:   POST /seed
 """
 
 import asyncio

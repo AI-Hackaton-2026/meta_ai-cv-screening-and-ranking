@@ -5,7 +5,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { candidatesApi, jobsApi, seedApi } from "./api";
+import { candidatesApi, jobsApi } from "./api";
 
 // ── Query Keys ────────────────────────────────────────────────────────────────
 
@@ -20,10 +20,10 @@ export const keys = {
 
 // ── Job queries ───────────────────────────────────────────────────────────────
 
-export function useJobs() {
+export function useJobs(params = {}) {
   return useQuery({
-    queryKey: keys.jobs,
-    queryFn: jobsApi.list,
+    queryKey: [...keys.jobs, params],
+    queryFn: () => jobsApi.list(params),
   });
 }
 
@@ -146,15 +146,5 @@ export function useDeleteCandidateForJob(jobId) {
       qc.invalidateQueries({ queryKey: keys.batchStatus(jobId) });
       qc.invalidateQueries({ queryKey: keys.jobs });
     },
-  });
-}
-
-// ── Demo seed ─────────────────────────────────────────────────────────────────
-
-export function useSeed() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: seedApi.run,
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.jobs }),
   });
 }

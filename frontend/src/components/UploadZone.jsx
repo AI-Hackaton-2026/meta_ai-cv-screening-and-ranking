@@ -72,24 +72,26 @@ export function UploadZone({ jobId, onUploaded }) {
       {/* File list */}
       {files.length > 0 && (
         <div className="flex flex-col gap-1">
-          {files.map((f) => (
-            <div
-              key={f.name}
-              className="mh-filerow"
-            >
-              <FileText size={14} style={{ color: "var(--primary)" }} />
-              <span className="flex-1 text-xs text-[var(--foreground)] truncate">{f.name}</span>
-              <span className="text-xs text-[var(--muted-foreground)]">
-                {(f.size / 1024).toFixed(0)} KB
-              </span>
-              <button
-                onClick={(e) => { e.stopPropagation(); removeFile(f.name); }}
-                className="p-0.5 rounded hover:bg-[var(--primary-medium)] transition-colors"
+          <div className="mh-filelist-scroll">
+            {files.map((f) => (
+              <div
+                key={f.name}
+                className="mh-filerow"
               >
-                <X size={12} style={{ color: "var(--muted-foreground)" }} />
-              </button>
-            </div>
-          ))}
+                <FileText size={14} style={{ color: "var(--primary)" }} />
+                <span className="flex-1 text-xs text-[var(--foreground)] truncate">{f.name}</span>
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  {(f.size / 1024).toFixed(0)} KB
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeFile(f.name); }}
+                  className="p-0.5 rounded hover:bg-[var(--primary-medium)] transition-colors"
+                >
+                  <X size={12} style={{ color: "var(--muted-foreground)" }} />
+                </button>
+              </div>
+            ))}
+          </div>
           <Button
             onClick={handleUpload}
             loading={isPending}

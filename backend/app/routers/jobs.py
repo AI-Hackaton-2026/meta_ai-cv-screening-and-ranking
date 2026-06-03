@@ -122,8 +122,16 @@ async def create_job(
 
 
 @router.get("", response_model=list[JobListItem])
-async def list_jobs(session: AsyncSession = Depends(get_session)) -> list[JobListItem]:
-    result = await session.execute(select(Job).order_by(Job.created_at.desc()))
+async def list_jobs(
+    search: str | None = Query(default=None, max_length=200),
+    session: AsyncSession = Depends(get_session),
+) -> list[JobListItem]:
+    search_term = search.strip() if search else None
+    statement = select(Job)
+    if search_term:
+        statement = statement.where(Job.title.ilike(f"%{search_term}%"))
+
+    result = await session.execute(statement.order_by(Job.created_at.desc()))
     jobs = result.scalars().all()
 
     # Count candidates per job efficiently
@@ -303,7 +311,7 @@ async def get_leaderboard(
     job_id: int,
     search: str | None = Query(default=None, max_length=200),
     offset: int = Query(default=0, ge=0),
-    limit: int = Query(default=25, ge=1, le=1000),
+    limit: int = Query(default=20, ge=1, le=1000),
     sort_dir: str = Query(default="desc", pattern="^(asc|desc)$"),
     session: AsyncSession = Depends(get_session),
 ) -> LeaderboardPage:

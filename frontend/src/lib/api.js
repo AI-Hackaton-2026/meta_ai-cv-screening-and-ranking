@@ -16,7 +16,7 @@ export const apiClient = axios.create({
 // ── Jobs ─────────────────────────────────────────────────────────────────────
 
 export const jobsApi = {
-  list: () => apiClient.get("/jobs").then((r) => r.data),
+  list: (params = {}) => apiClient.get("/jobs", { params }).then((r) => r.data),
   get: (id) => apiClient.get(`/jobs/${id}`).then((r) => r.data),
   create: (data) => apiClient.post("/jobs", data).then((r) => r.data),
   update: (id, data) => apiClient.patch(`/jobs/${id}`, data).then((r) => r.data),
@@ -51,10 +51,4 @@ export const candidatesApi = {
   delete: (id) => apiClient.delete(`/candidates/${id}`),
   previewCv: (id) => `${BASE_URL}/candidates/${id}/cv-preview`,
   exportPdf: (id) => `${BASE_URL}/candidates/${id}/export?format=pdf`,
-};
-
-// ── Demo ─────────────────────────────────────────────────────────────────────
-
-export const seedApi = {
-  run: () => apiClient.post("/seed").then((r) => r.data),
 };

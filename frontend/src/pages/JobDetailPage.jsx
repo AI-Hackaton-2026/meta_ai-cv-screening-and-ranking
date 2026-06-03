@@ -28,6 +28,7 @@ import { BatchProgress } from "@/components/BatchProgress";
 import { UploadZone } from "@/components/UploadZone";
 import { CompareView } from "@/components/CompareView";
 import { WeightsEditor } from "@/components/WeightsEditor";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useBatchStatus,
   useDeleteCandidateForJob,
@@ -39,7 +40,7 @@ import { jobsApi } from "@/lib/api";
 
 const CATEGORIES = ["skills", "experience", "education", "domain_fit"];
 const CAT_LABEL = { skills: "Skills", experience: "Exp.", education: "Edu.", domain_fit: "Domain" };
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export default function JobDetailPage() {
   const { id } = useParams();
@@ -61,9 +62,9 @@ export default function JobDetailPage() {
   const [showCompare, setShowCompare] = useState(false);
   const [showRequirements, setShowRequirements] = useState(true);
   const [showWeights, setShowWeights] = useState(true);
-  const [showDescription, setShowDescription] = useState(false);
+  const [showAboutRole, setShowAboutRole] = useState(false);
   const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
   const [sort, setSort] = useState({ key: "overall_score", dir: "desc" });
   const [offset, setOffset] = useState(0);
   const [rescoringId, setRescoringId] = useState(null);
@@ -102,13 +103,8 @@ export default function JobDetailPage() {
   const canPageForward = offset + PAGE_SIZE < leaderboardTotal;
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedQuery(query);
-      setOffset(0);
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [query]);
+    setOffset(0);
+  }, [debouncedQuery]);
 
   useEffect(() => {
     if (leaderboardTotal > 0 && offset >= leaderboardTotal) {
@@ -224,7 +220,13 @@ export default function JobDetailPage() {
     <div className="mh-page mh-job-detail-page">
       <div className="mh-job-hero">
         <div>
-          <h1 className="mh-job-title-main">{job.title}</h1>
+          <div className="mh-title-action-row">
+            <h1 className="mh-job-title-main">{job.title}</h1>
+            <Button variant="outline" size="sm" onClick={() => setShowAboutRole(true)}>
+              <FileText size={14} />
+              About this role
+            </Button>
+          </div>
           <p className="mh-page-sub">
             {mustHave.length + niceToHave.length} requirements extracted ·{" "}
             {screenedCount} candidate{screenedCount !== 1 ? "s" : ""} screened
@@ -236,36 +238,7 @@ export default function JobDetailPage() {
             </span>
           )}
         </div>
-        <a href={jobsApi.exportCsv(jobId)} download>
-          <Button variant="outline" size="md">
-            <Download size={15} />
-            Export CSV
-          </Button>
-        </a>
       </div>
-
-      <Card className="mh-about-card">
-        <SectionButton
-          icon={<FileText size={15} />}
-          title="About this role"
-          className="mh-about-head"
-        />
-        <div className={`mh-jd ${showDescription ? "is-open" : "is-faded"}`}>
-          {job.description}
-        </div>
-        {!showDescription && (
-          <button className="mh-read-full" onClick={() => setShowDescription(true)}>
-            Read full description
-            <ChevronDown size={14} />
-          </button>
-        )}
-        {showDescription && (
-          <button className="mh-read-full" onClick={() => setShowDescription(false)}>
-            Collapse description
-            <ChevronUp size={14} />
-          </button>
-        )}
-      </Card>
 
       <div className="mh-job-detail-grid">
         <aside className="mh-stack">
@@ -371,6 +344,12 @@ export default function JobDetailPage() {
                 {!rescoringAll && <RefreshCw size={14} />}
                 Rescore all
               </Button>
+              <a href={jobsApi.exportCsv(jobId)} download>
+                <Button variant="outline" size="sm">
+                  <Download size={14} />
+                  Export CSV
+                </Button>
+              </a>
             </div>
           </div>
 
@@ -585,6 +564,20 @@ export default function JobDetailPage() {
           onClose={() => setShowCompare(false)}
         />
       )}
+
+      <Dialog
+        open={showAboutRole}
+        onClose={() => setShowAboutRole(false)}
+        title="About this role"
+        size="lg"
+      >
+        <div className="flex flex-col gap-3">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">{job.title}</h3>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--muted-foreground)]">
+            {job.description}
+          </p>
+        </div>
+      </Dialog>
 
       <Dialog open={!!candidateToDelete} onClose={handleCancelDelete} title="Delete CV" size="sm">
         <div className="flex flex-col gap-4">
