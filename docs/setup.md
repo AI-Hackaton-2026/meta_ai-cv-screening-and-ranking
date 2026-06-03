@@ -83,4 +83,4 @@ This creates sample jobs from `samples/`, attaches CVs from `samples/cvs/`, runs
 | Upload rejected (409) | Wait until job extraction status is **Ready** |
 | CV scoring error / empty text | Scanned PDFs are not supported; use text-based PDF/DOCX |
 | Port in use | Change uvicorn `--port` and `CORS_ORIGINS` in `.env` |
-| `SSLCertVerificationError` on startup | Use the **session pooler** `DATABASE_URL` (not `db.*.supabase.co`). Run `uv sync`. On macOS behind a corporate proxy, add `DATABASE_SSL_INSECURE=true` to `backend/.env` (local only — never on Render). |
+| `SSLCertVerificationError` on startup | Use the **session pooler** `DATABASE_URL` (not `db.*.supabase.co`). Run `uv sync`. On macOS behind a corporate proxy, add `DATABASE_SSL_INSECURE=true` to `backend/.env` (local only). On Render, do **not** set `DATABASE_SSL_INSECURE`; ensure `DATABASE_URL` is the pooler URL only. |

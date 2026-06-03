@@ -25,8 +25,15 @@ def _clear_x509_strict(ctx: ssl.SSLContext) -> ssl.SSLContext:
     return ctx
 
 
+def _system_ssl_context() -> ssl.SSLContext:
+    """OS trust store (works on Render/Linux when certifi-only fails)."""
+    return _clear_x509_strict(ssl.create_default_context())
+
+
 def _certifi_ssl_context() -> ssl.SSLContext:
-    return _clear_x509_strict(ssl.create_default_context(cafile=_CERTIFI_CA))
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.load_verify_locations(cafile=_CERTIFI_CA)
+    return _clear_x509_strict(ctx)
 
 
 def _truststore_ssl_context() -> ssl.SSLContext:
@@ -42,15 +49,26 @@ def _insecure_ssl_context() -> ssl.SSLContext:
     return ctx
 
 
-def _ssl_context_candidates() -> list[Callable[[], ssl.SSLContext]]:
-    factories: list[Callable[[], ssl.SSLContext]] = []
+def _ssl_context_candidates() -> list[Callable[[], ssl.SSLContext] | None]:
+    """
+    None = let asyncpg use ssl=True (platform default context).
+    Order tuned per OS; Render/Linux usually succeeds with system CAs first.
+    """
+    factories: list[Callable[[], ssl.SSLContext] | None] = []
     if sys.platform == "darwin":
-        factories.extend([_truststore_ssl_context, _certifi_ssl_context])
+        factories.extend([_truststore_ssl_context, _certifi_ssl_context, _system_ssl_context])
     else:
-        factories.append(_certifi_ssl_context)
+        factories.extend([_system_ssl_context, _certifi_ssl_context, None])
     if settings.database_ssl_insecure:
         factories.append(_insecure_ssl_context)
     return factories
+
+
+def _is_ssl_verify_error(exc: BaseException) -> bool:
+    if isinstance(exc, ssl.SSLCertVerificationError):
+        return True
+    message = str(exc).upper()
+    return "CERTIFICATE_VERIFY_FAILED" in message or "CERTIFICATE VERIFY FAILED" in message
 
 
 async def _asyncpg_connect():
@@ -60,6 +78,7 @@ async def _asyncpg_connect():
 
     errors: list[Exception] = []
     for factory in _ssl_context_candidates():
+        ssl_arg: bool | ssl.SSLContext = True if factory is None else factory()
         try:
             return await asyncpg.connect(
                 host=url.host,
@@ -67,20 +86,22 @@ async def _asyncpg_connect():
                 user=url.username,
                 password=url.password or "",
                 database=url.database or "postgres",
-                ssl=factory(),
+                ssl=ssl_arg,
             )
-        except ssl.SSLCertVerificationError as exc:
+        except Exception as exc:
+            if not _is_ssl_verify_error(exc):
+                raise
             errors.append(exc)
 
     hint = (
-        " Set DATABASE_SSL_INSECURE=true in backend/.env for local dev behind a "
-        "corporate SSL proxy (never on production)."
+        " Confirm DATABASE_URL is the Supabase session pooler (port 5432). "
+        "For local dev behind a corporate proxy only, set DATABASE_SSL_INSECURE=true "
+        "(never on Render/production)."
         if not settings.database_ssl_insecure
         else ""
     )
     raise RuntimeError(
-        "Postgres SSL verification failed. Use the Supabase session pooler URL "
-        f"(port 5432).{hint} Last error: {errors[-1]}"
+        f"Postgres SSL verification failed for {url.host}.{hint} Last error: {errors[-1]}"
     ) from errors[-1]
 
 
@@ -88,6 +109,7 @@ engine = create_async_engine(
     settings.database_url,
     echo=False,
     async_creator=_asyncpg_connect,
+    pool_pre_ping=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(
