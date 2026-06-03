@@ -82,19 +82,15 @@ export default function JobDetailPage() {
     sort_dir: sort.dir,
   };
   const hasActive = statusData ? statusData.pending + statusData.processing > 0 : false;
-  const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(
-    jobId,
-    leaderboardParams,
-    {
-      refetchInterval: (queryState) => {
-        const rows = queryState?.state?.data?.items ?? [];
-        const leaderboardHasActive = rows.some(
-          (entry) => entry.status === "pending" || entry.status === "processing"
-        );
-        return hasActive || leaderboardHasActive ? 2000 : false;
-      },
-    }
-  );
+  const { data: leaderboard, isLoading: lbLoading } = useLeaderboard(jobId, leaderboardParams, {
+    refetchInterval: (queryState) => {
+      const rows = queryState?.state?.data?.items ?? [];
+      const leaderboardHasActive = rows.some(
+        (entry) => entry.status === "pending" || entry.status === "processing"
+      );
+      return hasActive || leaderboardHasActive ? 2000 : false;
+    },
+  });
 
   const leaderboardRows = leaderboard?.items ?? [];
   const leaderboardTotal = leaderboard?.total ?? 0;
@@ -134,8 +130,8 @@ export default function JobDetailPage() {
       prev.includes(candidateId)
         ? prev.filter((item) => item !== candidateId)
         : prev.length < 4
-        ? [...prev, candidateId]
-        : prev
+          ? [...prev, candidateId]
+          : prev
     );
   };
 
@@ -180,7 +176,9 @@ export default function JobDetailPage() {
       if (failed) {
         toast.error(`${failed} candidate${failed !== 1 ? "s" : ""} failed to rescore.`);
       } else {
-        toast.success(`${candidates.length} candidate${candidates.length !== 1 ? "s" : ""} queued.`);
+        toast.success(
+          `${candidates.length} candidate${candidates.length !== 1 ? "s" : ""} queued.`
+        );
       }
     } finally {
       setRescoringAll(false);
@@ -250,8 +248,8 @@ export default function JobDetailPage() {
             </button>
           </h1>
           <p className="mh-page-sub">
-            {mustHave.length + niceToHave.length} requirements extracted ·{" "}
-            {screenedCount} candidate{screenedCount !== 1 ? "s" : ""} screened
+            {mustHave.length + niceToHave.length} requirements extracted · {screenedCount} candidate
+            {screenedCount !== 1 ? "s" : ""} screened
           </p>
           {job.extraction_status === "extracting" && (
             <span className="mh-inline-processing">
@@ -290,7 +288,11 @@ export default function JobDetailPage() {
                     <RequirementGroup title="Must-have" requirements={mustHave} variant="default" />
                   )}
                   {niceToHave.length > 0 && (
-                    <RequirementGroup title="Nice-to-have" requirements={niceToHave} variant="muted" />
+                    <RequirementGroup
+                      title="Nice-to-have"
+                      requirements={niceToHave}
+                      variant="muted"
+                    />
                   )}
                 </div>
               </div>
@@ -298,10 +300,7 @@ export default function JobDetailPage() {
           )}
 
           <Card>
-            <SectionButton
-              icon={<AscendingIcon size={17} />}
-              title="Scoring weights"
-            />
+            <SectionButton icon={<AscendingIcon size={17} />} title="Scoring weights" />
             <div className="mh-static-card-body">
               <WeightsEditor jobId={jobId} currentWeights={job.category_weights} />
             </div>
@@ -464,7 +463,10 @@ export default function JobDetailPage() {
                         </td>
                         <td>
                           <div className="mh-candidate-cell">
-                            <span className="mh-cand-avatar" style={{ background: avatarColor(entry.name) }}>
+                            <span
+                              className="mh-cand-avatar"
+                              style={{ background: avatarColor(entry.name) }}
+                            >
                               {initials(entry.name)}
                             </span>
                             <div className="min-w-0">
@@ -481,9 +483,15 @@ export default function JobDetailPage() {
                         <td>
                           {isDone && entry.overall_score != null ? (
                             <div className="mh-score-cell">
-                              <span className="mh-score-number mono">{entry.overall_score.toFixed(1)}</span>
+                              <span className="mh-score-number mono">
+                                {entry.overall_score.toFixed(1)}
+                              </span>
                               <div className="mh-scorebar-cell">
-                                <ScoreBar score={entry.overall_score} height={5} showLabel={false} />
+                                <ScoreBar
+                                  score={entry.overall_score}
+                                  height={5}
+                                  showLabel={false}
+                                />
                               </div>
                             </div>
                           ) : (
@@ -591,11 +599,16 @@ export default function JobDetailPage() {
         </div>
       </Dialog>
 
-      <Dialog open={showClearAll} onClose={() => !clearingAll && setShowClearAll(false)} title="Clear all candidates" size="sm">
+      <Dialog
+        open={showClearAll}
+        onClose={() => !clearingAll && setShowClearAll(false)}
+        title="Clear all candidates"
+        size="sm"
+      >
         <div className="flex flex-col gap-4">
           <p className="text-sm leading-relaxed text-(--muted-foreground)">
-            Remove all candidates from this job? This will empty the leaderboard and delete
-            uploaded CVs and evaluations for this job.
+            Remove all candidates from this job? This will empty the leaderboard and delete uploaded
+            CVs and evaluations for this job.
           </p>
           <div className="flex justify-end gap-2">
             <Button
@@ -623,16 +636,24 @@ export default function JobDetailPage() {
         <div className="flex flex-col gap-4">
           <p className="text-sm leading-relaxed text-(--muted-foreground)">
             Delete{" "}
-            <span className="font-semibold text-(--foreground)">
-              {candidateToDelete?.name}
-            </span>{" "}
+            <span className="font-semibold text-(--foreground)">{candidateToDelete?.name}</span>{" "}
             from this job? This will remove the CV and its evaluation from the leaderboard.
           </p>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={handleCancelDelete} disabled={!!deletingId}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelDelete}
+              disabled={!!deletingId}
+            >
               Cancel
             </Button>
-            <Button type="button" variant="danger" onClick={handleConfirmDelete} loading={!!deletingId}>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleConfirmDelete}
+              loading={!!deletingId}
+            >
               <Trash2 size={14} />
               Delete CV
             </Button>
@@ -673,7 +694,11 @@ function RequirementGroup({ title, requirements, variant }) {
 function initials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
-  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 function avatarColor(name = "") {

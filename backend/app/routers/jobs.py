@@ -45,9 +45,6 @@ DEFAULT_JOBS_PAGE_SIZE = 12
 MAX_JOBS_PAGE_SIZE = 50
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-
 async def _get_job_or_404(job_id: int, session: AsyncSession) -> Job:
     job = await session.get(Job, job_id)
     if not job:
@@ -90,7 +87,6 @@ async def _trigger_extraction(job_id: int) -> None:
         try:
             result = await extract_requirements(job)
 
-            # Persist requirements
             for item in result.must_have:
                 session.add(
                     Requirement(
@@ -122,9 +118,6 @@ async def _trigger_extraction(job_id: int) -> None:
             await session.commit()
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
-
-
 @router.post("", response_model=JobOut, status_code=201)
 async def create_job(
     body: JobCreate,
@@ -135,11 +128,9 @@ async def create_job(
     await session.commit()
     await session.refresh(job)
 
-    # Kick off requirement extraction as a background task
     asyncio.create_task(_trigger_extraction(job.id))
 
-    # IMPORTANT: avoid async lazy-loading relationships during Pydantic validation
-    # (can raise MissingGreenlet). Re-query with requirements eagerly loaded.
+    # Avoid MissingGreenlet: re-query with requirements eagerly loaded before Pydantic validation.
     result = await session.execute(
         select(Job).options(selectinload(Job.requirements)).where(Job.id == job.id)
     )
@@ -286,9 +277,6 @@ async def delete_job(
     await session.commit()
 
 
-# ── CV Upload ─────────────────────────────────────────────────────────────────
-
-
 @router.post("/{job_id}/candidates", status_code=202)
 async def upload_candidates(
     job_id: int,
@@ -338,7 +326,6 @@ async def upload_candidates(
                     errors.append({"filename": filename, "error": str(e)})
                     continue
 
-            # Use filename stem as initial name; Claude will extract the real name during scoring
             name = Path(filename).stem.replace("_", " ").replace("-", " ").title()
             email = extract_email(text)
 
@@ -404,9 +391,6 @@ async def clear_candidates(
     await session.commit()
 
     return {"deleted": deleted_count}
-
-
-# ── Leaderboard ───────────────────────────────────────────────────────────────
 
 
 @router.get("/{job_id}/candidates", response_model=LeaderboardPage)
@@ -541,9 +525,6 @@ async def get_batch_status(
         done=counts.get("done", 0),
         error=counts.get("error", 0),
     )
-
-
-# ── Export ────────────────────────────────────────────────────────────────────
 
 
 @router.get("/{job_id}/export")

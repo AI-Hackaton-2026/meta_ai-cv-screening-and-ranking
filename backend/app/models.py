@@ -13,8 +13,6 @@ from sqlalchemy.types import TypeDecorator
 
 from app.db import Base
 
-# ── Custom JSON column type ───────────────────────────────────────────────────
-
 
 class JSONType(TypeDecorator):
     """Stores Python objects as JSON text in SQLite."""
@@ -33,9 +31,6 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-# ── Models ────────────────────────────────────────────────────────────────────
-
-
 class Job(Base):
     __tablename__ = "jobs"
 
@@ -43,12 +38,8 @@ class Job(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # "pending" | "extracting" | "done" | "error"
     extraction_status: Mapped[str] = mapped_column(String(20), default="pending")
     extraction_error: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    # Weights per scoring category (dict: category -> int, must sum to 100).
-    # Defaults set by Claude on extraction; recruiter can edit.
     category_weights: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
@@ -71,9 +62,7 @@ class Requirement(Base):
     job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False, index=True)
 
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    # "must_have" | "nice_to_have"
     kind: Mapped[str] = mapped_column(String(20), nullable=False)
-    # "skills" | "experience" | "education" | "domain_fit"
     category: Mapped[str] = mapped_column(String(30), nullable=False)
 
     job: Mapped["Job"] = relationship("Job", back_populates="requirements")
@@ -85,16 +74,12 @@ class Candidate(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False, index=True)
 
-    # Extracted from CV by Claude (first pass); falls back to filename stem
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
     storage_path: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
-    # Full CV text extracted from the uploaded file (not returned in list responses)
     raw_text: Mapped[str] = mapped_column(Text, nullable=False)
-
-    # "pending" | "processing" | "done" | "error"
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -115,24 +100,15 @@ class Evaluation(Base):
     )
 
     overall_score: Mapped[float] = mapped_column(Float, nullable=False)
-
-    # {"skills": {"score": 85, "rationale": "..."}, ...}
     category_scores: Mapped[dict] = mapped_column(JSONType, nullable=False)
-
-    # [{"requirement_id": 1, "status": "met", "evidence": "..."}, ...]
     requirement_matches: Mapped[list] = mapped_column(JSONType, nullable=False)
 
     strengths: Mapped[list] = mapped_column(JSONType, nullable=False)
     gaps: Mapped[list] = mapped_column(JSONType, nullable=False)
 
-    # "advance" | "hold" | "reject"
     recommendation: Mapped[str] = mapped_column(String(20), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
-
-    # Full chain-of-thought reasoning from Claude
     reasoning: Mapped[str] = mapped_column(Text, nullable=False)
-
-    # Which Claude model produced this evaluation
     model: Mapped[str] = mapped_column(String(100), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)

@@ -88,7 +88,6 @@ async def score_candidate(
             logger.error("Candidate %s not found", candidate_id)
             return
 
-        # Mark as processing immediately so UI reflects it
         candidate.status = "processing"
         await session.commit()
 
@@ -124,7 +123,6 @@ async def score_candidate(
                 candidate.job.category_weights,
             )
 
-            # Delete existing evaluation if this is a rescore
             existing = await session.execute(
                 select(Evaluation).where(Evaluation.candidate_id == candidate_id)
             )
@@ -147,7 +145,6 @@ async def score_candidate(
             )
             session.add(evaluation)
 
-            # Update candidate name if Claude found it
             if eval_result.candidate_name.strip():
                 candidate.name = eval_result.candidate_name.strip()
 

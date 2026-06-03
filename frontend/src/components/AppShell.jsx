@@ -2,10 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 import { Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/**
- * Top navigation bar + page wrapper.
- * Stays fixed at top; content scrolls below.
- */
 export function AppShell({ children }) {
   const { pathname } = useLocation();
   const isWidePage = pathname.startsWith("/jobs/");
@@ -36,7 +32,6 @@ export function AppShell({ children }) {
 
         <div className="flex-1" />
 
-        {/* Nav */}
         <nav className="mh-nav">
           <NavLink
             to="/"
@@ -49,9 +44,7 @@ export function AppShell({ children }) {
         </nav>
       </header>
 
-      <main className={cn("mh-main flex-1 w-full", isWidePage && "mh-main-wide")}>
-        {children}
-      </main>
+      <main className={cn("mh-main flex-1 w-full", isWidePage && "mh-main-wide")}>{children}</main>
     </div>
   );
 }
@@ -60,11 +53,7 @@ function NavLink({ to, active, sectionActive, children }) {
   return (
     <Link
       to={to}
-      className={cn(
-        "mh-navlink",
-        active && "is-active",
-        sectionActive && "is-section-active"
-      )}
+      className={cn("mh-navlink", active && "is-active", sectionActive && "is-section-active")}
     >
       {children}
     </Link>

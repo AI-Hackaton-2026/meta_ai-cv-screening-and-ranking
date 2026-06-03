@@ -75,7 +75,10 @@ export default function CandidatePage() {
   const evaluation = candidate?.evaluation;
 
   const reqMap = useMemo(
-    () => Object.fromEntries((job?.requirements ?? []).map((requirement) => [requirement.id, requirement])),
+    () =>
+      Object.fromEntries(
+        (job?.requirements ?? []).map((requirement) => [requirement.id, requirement])
+      ),
     [job?.requirements]
   );
 
@@ -213,9 +216,7 @@ export default function CandidatePage() {
 
       {!evaluation ? (
         <Card>
-          <p className="text-sm text-[var(--muted-foreground)]">
-            Evaluation is not available yet.
-          </p>
+          <p className="text-sm text-[var(--muted-foreground)]">Evaluation is not available yet.</p>
         </Card>
       ) : (
         <>
@@ -278,7 +279,10 @@ export default function CandidatePage() {
                   const ReqIcon = meta.icon;
 
                   return (
-                    <div key={`${match.requirement_id}-${index}`} className={`mh-reqcard ${meta.className}`}>
+                    <div
+                      key={`${match.requirement_id}-${index}`}
+                      className={`mh-reqcard ${meta.className}`}
+                    >
                       <ReqIcon size={20} style={{ color: meta.color, marginTop: 1 }} />
                       <div className="min-w-0 flex-1">
                         <div className="mh-req-title-row">
@@ -437,8 +441,7 @@ function Radar({ scores, size = RADAR_SIZE }) {
 
   const hoveredAxis = hovered ? axes.find((axis) => axis.key === hovered) : null;
   const hoveredValue = hovered ? (scores?.[hovered]?.score ?? 0) : 0;
-  const hoveredPoint =
-    hoveredAxis && point((hoveredValue / 100) * progress, hoveredAxis);
+  const hoveredPoint = hoveredAxis && point((hoveredValue / 100) * progress, hoveredAxis);
 
   return (
     <div className="mh-radar-chart">
@@ -460,23 +463,23 @@ function Radar({ scores, size = RADAR_SIZE }) {
           <polygon
             key={fraction}
             points={axes.map((axis) => point(fraction, axis).join(",")).join(" ")}
-          fill="none"
-          stroke="var(--border)"
-          strokeWidth="2"
-        />
-      ))}
-      {axes.map((axis) => {
-        const [x, y] = point(1, axis);
-        return (
-          <line
-            key={axis.key}
-            x1={cx}
-            y1={cy}
-            x2={x}
-            y2={y}
+            fill="none"
             stroke="var(--border)"
             strokeWidth="2"
           />
+        ))}
+        {axes.map((axis) => {
+          const [x, y] = point(1, axis);
+          return (
+            <line
+              key={axis.key}
+              x1={cx}
+              y1={cy}
+              x2={x}
+              y2={y}
+              stroke="var(--border)"
+              strokeWidth="2"
+            />
           );
         })}
         <polygon
@@ -586,7 +589,11 @@ function Radar({ scores, size = RADAR_SIZE }) {
 function initials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
-  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 function avatarColor(name = "") {

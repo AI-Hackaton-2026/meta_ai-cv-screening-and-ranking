@@ -7,8 +7,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { candidatesApi, jobsApi } from "./api";
 
-// ── Query Keys ────────────────────────────────────────────────────────────────
-
 export const keys = {
   jobs: ["jobs"],
   job: (id) => ["jobs", id],
@@ -17,8 +15,6 @@ export const keys = {
   batchStatus: (jobId) => ["jobs", jobId, "status"],
   candidate: (id) => ["candidates", id],
 };
-
-// ── Job queries ───────────────────────────────────────────────────────────────
 
 export function useJobs(params = {}) {
   return useQuery({
@@ -71,8 +67,6 @@ export function useBatchStatus(jobId, options = {}) {
   });
 }
 
-// ── Job mutations ─────────────────────────────────────────────────────────────
-
 export function useCreateJob() {
   const qc = useQueryClient();
   return useMutation({
@@ -123,8 +117,6 @@ export function useClearCandidatesForJob(jobId) {
     },
   });
 }
-
-// ── Candidate queries/mutations ───────────────────────────────────────────────
 
 export function useCandidate(id) {
   return useQuery({

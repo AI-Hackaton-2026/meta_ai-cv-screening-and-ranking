@@ -1,6 +1,5 @@
 import { statusMeta } from "@/lib/utils";
 
-/** Shows candidate processing status with colour-coded dot. */
 export function StatusBadge({ status }) {
   const { label, color } = statusMeta(status);
   const isSpinning = status === "processing";

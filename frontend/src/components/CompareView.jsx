@@ -96,7 +96,6 @@ function ReqStatusCell({ match }) {
   );
 }
 
-/** Shared column grid: label + N equal candidate columns */
 function CompareRow({ children, className }) {
   return <div className={cn("mh-compare-row", className)}>{children}</div>;
 }
@@ -156,7 +155,6 @@ export function CompareView({ candidateIds, requirements = [], onClose }) {
 
       {!isLoading && colCount > 0 && (
         <div className="mh-compare-layout" style={layoutStyle}>
-          {/* Hero */}
           <section className="mh-compare-block mh-compare-block--hero">
             <CompareRow className="mh-compare-row--hero">
               {candidates.map((c) => {
@@ -179,7 +177,6 @@ export function CompareView({ candidateIds, requirements = [], onClose }) {
             </CompareRow>
           </section>
 
-          {/* Category scores */}
           <section className="mh-compare-block">
             <SectionTitle>Category scores</SectionTitle>
             <div className="mh-compare-block__body">
@@ -199,7 +196,6 @@ export function CompareView({ candidateIds, requirements = [], onClose }) {
             </div>
           </section>
 
-          {/* Recruiter summary (above requirements) */}
           <section className="mh-compare-block">
             <SectionTitle>Recruiter summary</SectionTitle>
             <div className="mh-compare-block__body">
@@ -214,7 +210,6 @@ export function CompareView({ candidateIds, requirements = [], onClose }) {
             </div>
           </section>
 
-          {/* Requirements — own scroll region */}
           {sortedReqs.length > 0 && (
             <section className="mh-compare-block mh-compare-block--reqs">
               <div className="mh-compare-block__title-row">

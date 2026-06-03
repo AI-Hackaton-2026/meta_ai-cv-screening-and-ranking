@@ -7,7 +7,10 @@ import { Dialog } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
 import { useUploadCandidates } from "@/lib/queries";
 
-const ACCEPTED = { "application/pdf": [".pdf"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] };
+const ACCEPTED = {
+  "application/pdf": [".pdf"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+};
 
 export function UploadZone({
   jobId,
@@ -59,9 +62,7 @@ export function UploadZone({
   const uploadContent = (
     <div className="flex flex-col gap-3">
       {disabled && (
-        <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
-          {disabledMessage}
-        </p>
+        <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">{disabledMessage}</p>
       )}
       <div
         {...getRootProps()}
@@ -82,22 +83,21 @@ export function UploadZone({
         </div>
       </div>
 
-      {/* File list */}
       {files.length > 0 && (
         <div className="flex flex-col gap-1">
           <div className="mh-filelist-scroll">
             {files.map((f) => (
-              <div
-                key={f.name}
-                className="mh-filerow"
-              >
+              <div key={f.name} className="mh-filerow">
                 <FileText size={14} style={{ color: "var(--primary)" }} />
                 <span className="flex-1 text-xs text-[var(--foreground)] truncate">{f.name}</span>
                 <span className="text-xs text-[var(--muted-foreground)]">
                   {(f.size / 1024).toFixed(0)} KB
                 </span>
                 <button
-                  onClick={(e) => { e.stopPropagation(); removeFile(f.name); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFile(f.name);
+                  }}
                   className="p-0.5 rounded hover:bg-[var(--primary-medium)] transition-colors"
                 >
                   <X size={12} style={{ color: "var(--muted-foreground)" }} />
@@ -123,12 +123,7 @@ export function UploadZone({
     return (
       <>
         <div className="mh-compact-upload">
-          <Button
-            type="button"
-            size="sm"
-            disabled={disabled}
-            onClick={() => setModalOpen(true)}
-          >
+          <Button type="button" size="sm" disabled={disabled} onClick={() => setModalOpen(true)}>
             <UploadCloud size={14} />
             Upload CVs
           </Button>

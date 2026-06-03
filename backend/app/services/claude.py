@@ -30,12 +30,8 @@ from app.schemas import (
 
 logger = logging.getLogger(__name__)
 
-# Module-level async client; shared across all requests.
 _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-# ── Prompt templates ──────────────────────────────────────────────────────────
-
-# Extracts structured requirements + scoring weight suggestions from a job description.
 REQUIREMENTS_EXTRACTION_PROMPT = """\
 You are an expert technical recruiter. Analyse the job title and description below \
 and extract a structured list of candidate requirements.
@@ -54,7 +50,6 @@ Instructions:
 5. Be specific and concise — one clear statement per requirement.
 """
 
-# Evaluates a single candidate CV against the job + its extracted requirements.
 CANDIDATE_EVALUATION_PROMPT = """\
 You are a senior technical recruiter conducting a rigorous, unbiased CV review.
 
@@ -143,9 +138,6 @@ conversational text outside the JSON block.
 """
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-
 def _build_requirements_block(requirements: list) -> str:
     """Format requirements as a numbered list with IDs for the prompt."""
     lines = []
@@ -199,8 +191,7 @@ async def _call_claude[T](prompt: str, output_schema: type[T], attempt: int = 1)
     Retries once on APIError (network hiccup, rate limit 429, etc.).
     """
     try:
-        # NOTE: `messages.create()` does not accept `output_format` in this SDK version.
-        # Use the streaming API, which supports `output_format` and returns parsed output.
+        # `messages.create()` lacks `output_format` in this SDK — stream API returns parsed output.
         async with _client.messages.stream(
             model=settings.claude_model,
             max_tokens=4096,
@@ -221,9 +212,6 @@ async def _call_claude[T](prompt: str, output_schema: type[T], attempt: int = 1)
         raise
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
-
-
 async def extract_requirements(job: object) -> ExtractionResult:
     """
     Ask Claude to extract requirements from a job description.
@@ -236,7 +224,6 @@ async def extract_requirements(job: object) -> ExtractionResult:
     try:
         result = cast(ExtractionResult, await _call_claude(prompt, ExtractionResult))
     except Exception as e:
-        # Let the caller decide how to persist failure state (routers mark status=error).
         logger.exception(
             "Requirement extraction failed for job %s: %s",
             getattr(job, "id", "?"),
@@ -244,7 +231,6 @@ async def extract_requirements(job: object) -> ExtractionResult:
         )
         raise RuntimeError(f"Requirement extraction failed: {e}") from e
 
-    # Ensure all requirements carry the right kind field
     for r in result.must_have:  # type: ignore[union-attr]
         r.kind = "must_have"
     for r in result.nice_to_have:  # type: ignore[union-attr]

@@ -79,7 +79,6 @@ async def seed() -> None:
 
     async with AsyncSessionLocal() as session:
         for job_data in SAMPLE_JOBS:
-            # Check if this job already exists
             result = await session.execute(select(Job).where(Job.title == job_data["title"]))
             existing = result.scalar_one_or_none()
             if existing:
@@ -92,7 +91,6 @@ async def seed() -> None:
             job_id = job.id
             candidate_ids: list[int] = []
 
-            # Load sample CVs from samples/cvs/
             cv_dir = SAMPLES_DIR / "cvs"
             if cv_dir.exists():
                 for cv_file in sorted(cv_dir.glob("*.pdf")) + sorted(cv_dir.glob("*.docx")):

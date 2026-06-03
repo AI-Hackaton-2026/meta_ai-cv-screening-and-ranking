@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure the data directory exists for local SQLite databases.
     database_url = make_url(settings.database_url)
     if database_url.drivername.startswith("sqlite") and database_url.database:
         os.makedirs(os.path.dirname(database_url.database) or ".", exist_ok=True)

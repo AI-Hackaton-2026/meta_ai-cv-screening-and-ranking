@@ -12,7 +12,7 @@ is_sqlite = database_url.drivername.startswith("sqlite")
 
 engine = create_async_engine(
     settings.database_url,
-    echo=False,  # set True for SQL query logging during development
+    echo=False,
     connect_args={"check_same_thread": False} if is_sqlite else {},
 )
 
