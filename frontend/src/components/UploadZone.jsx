@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { UploadCloud, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
 import { useUploadCandidates } from "@/lib/queries";
 
@@ -10,6 +11,7 @@ const ACCEPTED = { "application/pdf": [".pdf"], "application/vnd.openxmlformats-
 
 export function UploadZone({ jobId, onUploaded, compact = false }) {
   const [files, setFiles] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
   const { mutateAsync: upload, isPending } = useUploadCandidates(jobId);
 
   const onDrop = useCallback((accepted) => {
@@ -20,11 +22,10 @@ export function UploadZone({ jobId, onUploaded, compact = false }) {
     });
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ACCEPTED,
     multiple: true,
-    noClick: compact,
   });
 
   const removeFile = (name) => setFiles((prev) => prev.filter((f) => f.name !== name));
@@ -43,53 +44,13 @@ export function UploadZone({ jobId, onUploaded, compact = false }) {
       }
       setFiles([]);
       onUploaded?.();
+      if (compact) setModalOpen(false);
     } catch (error) {
       toast.error(error.response?.data?.detail ?? "Upload failed. Check backend connection.");
     }
   };
 
-  if (compact) {
-    return (
-      <div className="mh-compact-upload">
-        <div {...getRootProps({ className: "mh-compact-upload-input" })}>
-          <input {...getInputProps()} />
-        </div>
-        <Button type="button" size="sm" onClick={open}>
-          <UploadCloud size={14} />
-          Upload CVs
-        </Button>
-        {files.length > 0 && (
-          <>
-            <span className="mh-upload-count">
-              {files.length} CV{files.length !== 1 ? "s" : ""} selected
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleUpload}
-              loading={isPending}
-              disabled={!files.length}
-              className="mh-upload-confirm"
-            >
-              Confirm
-            </Button>
-            <button
-              type="button"
-              className="mh-compact-clear"
-              onClick={() => setFiles([])}
-              aria-label="Clear selected CVs"
-              title="Clear selected CVs"
-            >
-              <X size={13} />
-            </button>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  return (
+  const uploadContent = (
     <div className="flex flex-col gap-3">
       {/* Drop target */}
       <div
@@ -147,4 +108,28 @@ export function UploadZone({ jobId, onUploaded, compact = false }) {
       )}
     </div>
   );
+
+  if (compact) {
+    return (
+      <>
+        <div className="mh-compact-upload">
+          <Button type="button" size="sm" onClick={() => setModalOpen(true)}>
+            <UploadCloud size={14} />
+            Upload CVs
+          </Button>
+        </div>
+        <Dialog
+          open={modalOpen}
+          onClose={() => !isPending && setModalOpen(false)}
+          title="Upload CVs"
+          size="md"
+          bodyClassName="mh-upload-dialog-body"
+        >
+          {uploadContent}
+        </Dialog>
+      </>
+    );
+  }
+
+  return uploadContent;
 }
