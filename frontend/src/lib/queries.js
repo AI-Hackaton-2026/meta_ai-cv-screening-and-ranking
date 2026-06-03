@@ -94,6 +94,19 @@ export function useUploadCandidates(jobId) {
   });
 }
 
+export function useClearCandidatesForJob(jobId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => jobsApi.clearCandidates(jobId),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ["candidates"] });
+      qc.invalidateQueries({ queryKey: keys.leaderboard(jobId) });
+      qc.invalidateQueries({ queryKey: keys.batchStatus(jobId) });
+      qc.invalidateQueries({ queryKey: keys.jobs });
+    },
+  });
+}
+
 // ── Candidate queries/mutations ───────────────────────────────────────────────
 
 export function useCandidate(id) {

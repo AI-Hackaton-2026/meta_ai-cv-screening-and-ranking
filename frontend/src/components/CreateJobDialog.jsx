@@ -110,7 +110,6 @@ export function CreateJobDialog({ open, onClose }) {
             <p>
               On create, MetaHire extracts <strong>must-have</strong> and{" "}
               <strong>nice-to-have</strong> requirements and suggests scoring weights.
-              You can edit everything afterward.
             </p>
           </div>
 
@@ -134,9 +133,9 @@ function Field({ label, icon, hint, required, children }) {
     <div className="mh-field">
       <div className="mh-field-head">
         <label className="mh-field-label">
-          <span className="text-[var(--primary)]">{icon}</span>
+          <span className="text-(--primary)">{icon}</span>
           {label}
-          {required && <span className="text-[var(--primary)]">*</span>}
+          {required && <span className="text-(--primary)">*</span>}
         </label>
         {hint && <span className="mh-field-hint">{hint}</span>}
       </div>

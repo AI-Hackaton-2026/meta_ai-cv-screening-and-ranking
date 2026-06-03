@@ -31,6 +31,7 @@ export const jobsApi = {
       })
       .then((r) => r.data);
   },
+  clearCandidates: (jobId) => apiClient.delete(`/jobs/${jobId}/candidates`).then((r) => r.data),
 
   getLeaderboard: (jobId, params = {}) =>
     apiClient.get(`/jobs/${jobId}/candidates`, { params }).then((r) => r.data),
