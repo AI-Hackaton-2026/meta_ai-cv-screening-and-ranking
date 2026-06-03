@@ -57,15 +57,6 @@ export function WeightsEditor({ jobId, currentWeights }) {
         ))}
       </div>
 
-      <div className="mh-weight-legend">
-        {CATEGORIES.map(({ key, label, color }) => (
-          <span key={key}>
-            <span style={{ background: color }} />
-            <strong>{computedWeights[key] ?? 0}%</strong> {label}
-          </span>
-        ))}
-      </div>
-
       <div className="mh-weight-controls">
         {CATEGORIES.map(({ key, label, color }) => (
           <div key={key} className="mh-weight-row">

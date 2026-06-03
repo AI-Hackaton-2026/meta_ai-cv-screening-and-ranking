@@ -262,15 +262,6 @@ class RequirementMatch(BaseModel):
     )
 
 
-class PromptScoreSet(BaseModel):
-    """Candidate scoring shape requested in the evaluation prompt."""
-
-    skills: float = Field(..., ge=0, le=100, description="Technical skills score")
-    experience: float = Field(..., ge=0, le=100, description="Professional experience score")
-    education: float = Field(..., ge=0, le=100, description="Education score")
-    domain_fit: float = Field(..., ge=0, le=100, description="Domain fit score")
-
-
 class PromptRequirementAnalysis(BaseModel):
     """Per-requirement analysis shape requested in the evaluation prompt."""
 
@@ -286,7 +277,10 @@ class PromptEvaluationResult(BaseModel):
     """Claude output shape for the candidate evaluation prompt."""
 
     candidate_name: str = Field(..., description="Candidate's full name as found in the CV")
-    scores: PromptScoreSet
+    category_scores: CategoryScoreSet = Field(
+        ...,
+        description="Per-category scores and distinct rationales",
+    )
     requirements_analysis: list[PromptRequirementAnalysis]
     key_strengths: list[str] = Field(..., description="3-5 key strengths")
     notable_gaps: list[str] = Field(..., description="3-5 notable gaps or concerns")
@@ -317,5 +311,5 @@ class EvaluationResult(BaseModel):
     )
     reasoning: str = Field(
         ...,
-        description="Full chain-of-thought reasoning behind the evaluation",
+        description="Concise evaluator rationale behind the evaluation",
     )
