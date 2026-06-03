@@ -164,14 +164,6 @@ export default function CandidatePage() {
               {showCvPreview ? "Hide CV" : "Preview CV"}
             </Button>
           )}
-          {evaluation && (
-            <a href={candidatesApi.exportPdf(candidateId)} download>
-              <Button variant="outline" size="md">
-                <Download size={15} />
-                Export PDF
-              </Button>
-            </a>
-          )}
           <Button size="md" onClick={() => setShowInterviewDialog(true)}>
             <CalendarDays size={15} />
             Schedule interview
@@ -180,6 +172,14 @@ export default function CandidatePage() {
             {!rescoring && <RefreshCw size={15} />}
             Rescore
           </Button>
+          {evaluation && (
+            <a href={candidatesApi.exportPdf(candidateId)} download>
+              <Button variant="outline" size="md">
+                <Download size={15} />
+                Export PDF
+              </Button>
+            </a>
+          )}
         </div>
       </div>
 

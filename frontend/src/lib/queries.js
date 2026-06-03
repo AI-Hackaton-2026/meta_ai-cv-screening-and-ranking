@@ -4,7 +4,7 @@
  * never call the API directly.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { candidatesApi, jobsApi } from "./api";
 
 // ── Query Keys ────────────────────────────────────────────────────────────────
@@ -23,7 +23,23 @@ export const keys = {
 export function useJobs(params = {}) {
   return useQuery({
     queryKey: [...keys.jobs, params],
-    queryFn: () => jobsApi.list(params),
+    queryFn: async () => {
+      const page = await jobsApi.list(params);
+      return Array.isArray(page) ? page : page.items;
+    },
+  });
+}
+
+export function useInfiniteJobs(params = {}) {
+  return useInfiniteQuery({
+    queryKey: [...keys.jobs, "infinite", params],
+    initialPageParam: null,
+    queryFn: ({ pageParam }) =>
+      jobsApi.list({
+        ...params,
+        cursor: pageParam || undefined,
+      }),
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   });
 }
 
