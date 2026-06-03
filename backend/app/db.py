@@ -1,15 +1,19 @@
 from collections.abc import AsyncGenerator
 
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 from app.services.contact import extract_email
 
+database_url = make_url(settings.database_url)
+is_sqlite = database_url.drivername.startswith("sqlite")
+
 engine = create_async_engine(
     settings.database_url,
     echo=False,  # set True for SQL query logging during development
-    connect_args={"check_same_thread": False},
+    connect_args={"check_same_thread": False} if is_sqlite else {},
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -29,6 +33,9 @@ async def create_tables() -> None:
     """Create all tables on startup. Called from app lifespan."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        if not is_sqlite:
+            return
+
         columns = await conn.exec_driver_sql("PRAGMA table_info(candidates)")
         candidate_columns = columns.fetchall()
         if candidate_columns and "storage_path" not in {row[1] for row in candidate_columns}:

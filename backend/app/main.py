@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.engine import make_url
 
 from app.config import settings
 from app.db import create_tables
@@ -22,9 +23,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure the data directory exists (aiosqlite requires the parent dir)
-    db_path = settings.database_url.replace("sqlite+aiosqlite:///", "")
-    os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
+    # Ensure the data directory exists for local SQLite databases.
+    database_url = make_url(settings.database_url)
+    if database_url.drivername.startswith("sqlite") and database_url.database:
+        os.makedirs(os.path.dirname(database_url.database) or ".", exist_ok=True)
 
     await create_tables()
     logger.info("MetaHire API started. Model: %s", settings.claude_model)
