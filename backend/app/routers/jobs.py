@@ -28,6 +28,7 @@ from app.schemas import (
 )
 from app.services.contact import extract_email
 from app.services.export import generate_shortlist_csv
+from app.services.scoring import compute_overall_score
 from app.services.parsing import ParsingError, extract_text
 from app.services.scoring import process_job_candidates
 from app.services.storage import StorageError, delete_cvs, upload_cv
@@ -185,6 +186,16 @@ async def update_job(
         if total != 100:
             raise HTTPException(status_code=422, detail="Weights must sum to 100")
         job.category_weights = body.category_weights
+
+        # Recompute overall_score for all existing evaluations using the new weights.
+        # Individual category scores are unchanged — only the weighted final score updates.
+        ev_result = await session.execute(
+            select(Evaluation)
+            .join(Candidate, Evaluation.candidate_id == Candidate.id)
+            .where(Candidate.job_id == job_id)
+        )
+        for ev in ev_result.scalars().all():
+            ev.overall_score = compute_overall_score(ev.category_scores, body.category_weights)
 
     await session.commit()
 
