@@ -70,6 +70,14 @@ class JobListItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class JobListPage(BaseModel):
+    items: list[JobListItem]
+    next_cursor: str | None = None
+    has_more: bool
+    limit: int
+    search: str | None = None
+
+
 # ── Candidate / Leaderboard ───────────────────────────────────────────────────
 
 

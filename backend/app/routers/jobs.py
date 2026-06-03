@@ -4,12 +4,16 @@ Also handles CV upload, leaderboard, batch status, and export.
 """
 
 import asyncio
+import base64
+import binascii
+import json
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from fastapi.responses import Response
-from sqlalchemy import and_, asc, desc, func, not_, select
+from sqlalchemy import and_, asc, desc, func, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -22,6 +26,7 @@ from app.schemas import (
     CategoryScoreOut,
     JobCreate,
     JobListItem,
+    JobListPage,
     JobOut,
     JobUpdate,
     LeaderboardEntry,
@@ -36,6 +41,9 @@ from app.services.storage import StorageError, delete_cvs, upload_cv
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
+DEFAULT_JOBS_PAGE_SIZE = 12
+MAX_JOBS_PAGE_SIZE = 50
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -45,6 +53,23 @@ async def _get_job_or_404(job_id: int, session: AsyncSession) -> Job:
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+
+def _encode_jobs_cursor(job: Job) -> str:
+    payload = {"created_at": job.created_at.isoformat(), "id": job.id}
+    raw = json.dumps(payload, separators=(",", ":")).encode()
+    return base64.urlsafe_b64encode(raw).decode()
+
+
+def _decode_jobs_cursor(cursor: str) -> tuple[datetime, int]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode())
+        payload = json.loads(raw.decode())
+        created_at = datetime.fromisoformat(payload["created_at"])
+        job_id = int(payload["id"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError, binascii.Error):
+        raise HTTPException(status_code=422, detail="Invalid jobs cursor") from None
+    return created_at, job_id
 
 
 async def _trigger_extraction(job_id: int) -> None:
@@ -122,27 +147,45 @@ async def create_job(
     return JobOut.model_validate(job_with_requirements)
 
 
-@router.get("", response_model=list[JobListItem])
+@router.get("", response_model=JobListPage)
 async def list_jobs(
     search: str | None = Query(default=None, max_length=200),
+    limit: int = Query(default=DEFAULT_JOBS_PAGE_SIZE, ge=1, le=MAX_JOBS_PAGE_SIZE),
+    cursor: str | None = Query(default=None),
     session: AsyncSession = Depends(get_session),
-) -> list[JobListItem]:
+) -> JobListPage:
     search_term = search.strip() if search else None
     statement = select(Job)
     if search_term:
         statement = statement.where(Job.title.ilike(f"%{search_term}%"))
+    if cursor:
+        cursor_created_at, cursor_id = _decode_jobs_cursor(cursor)
+        statement = statement.where(
+            or_(
+                Job.created_at < cursor_created_at,
+                and_(Job.created_at == cursor_created_at, Job.id < cursor_id),
+            )
+        )
 
-    result = await session.execute(statement.order_by(Job.created_at.desc()))
-    jobs = result.scalars().all()
-
-    # Count candidates per job efficiently
-    count_result = await session.execute(
-        select(Candidate.job_id, func.count(Candidate.id)).group_by(Candidate.job_id)
+    result = await session.execute(
+        statement.order_by(desc(Job.created_at), desc(Job.id)).limit(limit + 1)
     )
-    counts = {int(job_id): int(count) for job_id, count in count_result.tuples().all()}
+    jobs = result.scalars().all()
+    page_jobs = jobs[:limit]
+    has_more = len(jobs) > limit
+
+    counts = {}
+    if page_jobs:
+        job_ids = [job.id for job in page_jobs]
+        count_result = await session.execute(
+            select(Candidate.job_id, func.count(Candidate.id))
+            .where(Candidate.job_id.in_(job_ids))
+            .group_by(Candidate.job_id)
+        )
+        counts = {int(job_id): int(count) for job_id, count in count_result.tuples().all()}
 
     items = []
-    for job in jobs:
+    for job in page_jobs:
         items.append(
             JobListItem(
                 id=job.id,
@@ -152,7 +195,13 @@ async def list_jobs(
                 candidate_count=counts.get(job.id, 0),
             )
         )
-    return items
+    return JobListPage(
+        items=items,
+        next_cursor=_encode_jobs_cursor(page_jobs[-1]) if has_more and page_jobs else None,
+        has_more=has_more,
+        limit=limit,
+        search=search_term,
+    )
 
 
 @router.get("/{job_id}", response_model=JobOut)

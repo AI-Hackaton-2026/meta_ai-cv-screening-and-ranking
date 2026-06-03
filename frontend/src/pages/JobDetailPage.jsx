@@ -6,8 +6,8 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  FileText,
   GitCompare,
+  Info,
   ListChecks,
   Loader2,
   RefreshCw,
@@ -236,13 +236,18 @@ export default function JobDetailPage() {
     <div className="mh-page mh-job-detail-page">
       <div className="mh-job-hero">
         <div>
-          <div className="mh-title-action-row">
-            <h1 className="mh-job-title-main">{job.title}</h1>
-            <Button variant="outline" size="sm" onClick={() => setShowAboutRole(true)}>
-              <FileText size={14} />
-              About this role
-            </Button>
-          </div>
+          <h1 className="mh-job-title-main">
+            {job.title}
+            <button
+              type="button"
+              className="mh-role-info-button"
+              onClick={() => setShowAboutRole(true)}
+              aria-label="About this role"
+              title="About this role"
+            >
+              <Info size={15} />
+            </button>
+          </h1>
           <p className="mh-page-sub">
             {mustHave.length + niceToHave.length} requirements extracted ·{" "}
             {screenedCount} candidate{screenedCount !== 1 ? "s" : ""} screened

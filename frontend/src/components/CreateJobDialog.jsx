@@ -10,7 +10,8 @@ export function CreateJobDialog({ open, onClose }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const { mutateAsync: createJob, isPending } = useCreateJob();
-  const isValid = title.trim().length > 0 && description.trim().length > 0;
+  const trimmedDescription = description.trim();
+  const isValid = title.trim().length > 0 && trimmedDescription.length >= 10;
 
   useEffect(() => {
     if (!open) return;
@@ -32,14 +33,18 @@ export function CreateJobDialog({ open, onClose }) {
     e.preventDefault();
     if (!isValid) return;
     try {
-      const job = await createJob({ title: title.trim(), description: description.trim() });
+      const job = await createJob({ title: title.trim(), description: trimmedDescription });
       toast.success("Job created! Extracting requirements…");
       onClose();
       setTitle("");
       setDescription("");
       navigate(`/jobs/${job.id}`);
-    } catch {
-      toast.error("Failed to create job. Is the backend running?");
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      const message = Array.isArray(detail)
+        ? "Job description must be at least 10 characters."
+        : detail || "Failed to create job. Is the backend running?";
+      toast.error(message);
     }
   };
 
@@ -89,7 +94,7 @@ export function CreateJobDialog({ open, onClose }) {
           <Field
             label="Job description"
             icon={<FileText size={14} strokeWidth={2.25} />}
-            hint={`${description.length} chars`}
+            hint={`${trimmedDescription.length}/10 chars min`}
             required
           >
             <textarea
