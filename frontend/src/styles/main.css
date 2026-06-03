@@ -729,6 +729,117 @@ body {
   min-height: 170px;
 }
 
+.mh-interview-modal {
+  max-width: 720px;
+}
+
+.mh-interview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mh-interview-message {
+  min-height: 96px;
+}
+
+.mh-format-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mh-format-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.mh-format-option:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mh-format-option.is-active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.mh-email-preview {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--primary-soft);
+}
+
+.mh-email-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.mh-email-preview-tag {
+  padding: 3px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mh-email-preview-body {
+  padding: 14px;
+  color: var(--secondary-foreground);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.mh-email-preview-body p {
+  margin: 0 0 10px;
+}
+
+.mh-email-preview-body p:last-child {
+  margin-bottom: 0;
+}
+
+.mh-email-line {
+  color: var(--muted-foreground);
+}
+
+.mh-email-divider {
+  height: 1px;
+  margin: 11px 0;
+  background: var(--border);
+}
+
+.mh-email-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 12px 0;
+  padding: 10px 11px;
+  border-left: 3px solid var(--primary);
+  background: var(--card);
+}
+
 .mh-ai-hint {
   display: flex;
   align-items: flex-start;
@@ -1542,6 +1653,10 @@ body {
 
   .mh-cv-preview-frame {
     min-height: 420px;
+  }
+
+  .mh-interview-grid {
+    grid-template-columns: 1fr;
   }
 }
 

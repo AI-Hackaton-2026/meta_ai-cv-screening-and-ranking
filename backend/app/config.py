@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None
     supabase_storage_bucket: str = "cvs"
 
+    # Mailjet transactional email — optional until interview invitations are sent
+    mailjet_api_key: str | None = None
+    mailjet_secret_key: str | None = None
+    email_from: str | None = None
+    email_from_name: str = "MetaHire"
+    email_reply_to: str | None = None
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",")]

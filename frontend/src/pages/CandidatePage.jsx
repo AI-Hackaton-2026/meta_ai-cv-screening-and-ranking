@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BarChart3,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -24,8 +25,9 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ScoreBar } from "@/components/ScoreBar";
+import { ScheduleInterviewDialog } from "@/components/ScheduleInterviewDialog";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useCandidate, useJob, useRescoreForJob } from "@/lib/queries";
+import { useCandidate, useJob, useRescoreForJob, useScheduleInterview } from "@/lib/queries";
 import { candidatesApi } from "@/lib/api";
 import { formatScore, recommendationLabel } from "@/lib/utils";
 
@@ -65,7 +67,10 @@ export default function CandidatePage() {
   const { data: candidate, isLoading } = useCandidate(candidateId);
   const { data: job } = useJob(candidate?.job_id);
   const { mutateAsync: rescore, isPending: rescoring } = useRescoreForJob(candidate?.job_id);
+  const { mutateAsync: scheduleInterview, isPending: schedulingInterview } =
+    useScheduleInterview(candidateId);
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const [showInterviewDialog, setShowInterviewDialog] = useState(false);
 
   const evaluation = candidate?.evaluation;
 
@@ -93,6 +98,17 @@ export default function CandidatePage() {
       navigate(`/jobs/${candidate.job_id}`, { replace: true });
     } catch {
       toast.error("Rescore failed.");
+    }
+  };
+
+  const handleSendInvitation = async (payload) => {
+    try {
+      const result = await scheduleInterview(payload);
+      setShowInterviewDialog(false);
+      toast.success(`Interview invitation sent. Provider id: ${result.provider_message_id}`);
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      toast.error(detail || "Failed to send interview invitation.");
     }
   };
 
@@ -156,12 +172,25 @@ export default function CandidatePage() {
               </Button>
             </a>
           )}
+          <Button size="md" onClick={() => setShowInterviewDialog(true)}>
+            <CalendarDays size={15} />
+            Schedule interview
+          </Button>
           <Button variant="outline" size="md" onClick={handleRescore} loading={rescoring}>
             {!rescoring && <RefreshCw size={15} />}
             Rescore
           </Button>
         </div>
       </div>
+
+      <ScheduleInterviewDialog
+        open={showInterviewDialog}
+        candidate={candidate}
+        jobTitle={job?.title}
+        onClose={() => setShowInterviewDialog(false)}
+        onSend={handleSendInvitation}
+        sending={schedulingInterview}
+      />
 
       {showCvPreview && candidate.has_cv_preview && (
         <Card className="mh-cv-preview-card">

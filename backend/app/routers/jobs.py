@@ -26,6 +26,7 @@ from app.schemas import (
     LeaderboardEntry,
     LeaderboardPage,
 )
+from app.services.contact import extract_email
 from app.services.export import generate_shortlist_csv
 from app.services.parsing import ParsingError, extract_text
 from app.services.scoring import process_job_candidates
@@ -265,10 +266,12 @@ async def upload_candidates(
 
             # Use filename stem as initial name; Claude will extract the real name during scoring
             name = Path(filename).stem.replace("_", " ").replace("-", " ").title()
+            email = extract_email(text)
 
             candidate = Candidate(
                 job_id=job_id,
                 name=name,
+                email=email,
                 original_filename=filename,
                 storage_path=storage_path,
                 raw_text=text,
