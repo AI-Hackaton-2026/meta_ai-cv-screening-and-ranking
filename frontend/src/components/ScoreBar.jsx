@@ -1,9 +1,5 @@
 import { scoreColor, formatScore } from "@/lib/utils";
 
-/**
- * Horizontal progress bar showing a 0-100 score.
- * Colour transitions red → amber → green based on score value.
- */
 export function ScoreBar({ score, showLabel = true, height = 6 }) {
   const pct = Math.min(Math.max(score ?? 0, 0), 100);
   const color = "var(--primary)";
@@ -28,7 +24,6 @@ export function ScoreBar({ score, showLabel = true, height = 6 }) {
   );
 }
 
-/** Mini inline score pill — used in leaderboard category columns. */
 export function ScorePill({ score }) {
   const color = scoreColor(score);
   return (

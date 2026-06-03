@@ -2,10 +2,6 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
-/**
- * Simple accessible dialog / modal.
- * Closes on Escape key and backdrop click.
- */
 export function Dialog({
   open,
   onClose,
@@ -56,7 +52,6 @@ export function Dialog({
           ...style,
         }}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border)]">
           <h2 className="text-base font-semibold text-[var(--foreground)]">{title}</h2>
           <button
@@ -66,7 +61,6 @@ export function Dialog({
             <X size={18} />
           </button>
         </div>
-        {/* Body */}
         <div className={cn("px-6 py-5", bodyClassName)}>{children}</div>
       </div>
     </div>

@@ -46,7 +46,6 @@ function GradientDef({ id }) {
   );
 }
 
-/** Funnel — screening / narrowing down candidates. */
 export function FunnelIcon(props) {
   const g = useGradient();
   return (
@@ -61,7 +60,6 @@ export function FunnelIcon(props) {
   );
 }
 
-/** CV with a check badge — a CV that passed screening. */
 export function CvCheckIcon(props) {
   const g = useGradient();
   return (
@@ -86,7 +84,6 @@ export function CvCheckIcon(props) {
   );
 }
 
-/** Match — two overlapping shapes (candidate ↔ position). */
 export function MatchIcon(props) {
   const g = useGradient();
   return (
@@ -98,7 +95,6 @@ export function MatchIcon(props) {
   );
 }
 
-/** AI sparkle — four-point star, used for AI-powered accents. */
 export function SparkleIcon(props) {
   const g = useGradient();
   return (
@@ -116,7 +112,6 @@ export function SparkleIcon(props) {
   );
 }
 
-/** Ascending — rising bars, for ranking / score sections. */
 export function AscendingIcon(props) {
   const g = useGradient();
   return (

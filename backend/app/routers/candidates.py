@@ -178,7 +178,6 @@ async def rescore_candidate(
     if candidate.status == "processing":
         return {"message": "Already processing", "candidate_id": candidate_id}
 
-    # Reset status so the UI shows it's in progress
     candidate.status = "pending"
     await session.commit()
 

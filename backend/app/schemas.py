@@ -12,8 +12,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-# ── Weights ───────────────────────────────────────────────────────────────────
-
 DEFAULT_WEIGHTS: dict[str, int] = {
     "skills": 35,
     "experience": 30,
@@ -22,9 +20,6 @@ DEFAULT_WEIGHTS: dict[str, int] = {
 }
 
 VALID_CATEGORIES = {"skills", "experience", "education", "domain_fit"}
-
-
-# ── Job ───────────────────────────────────────────────────────────────────────
 
 
 class JobCreate(BaseModel):
@@ -78,8 +73,6 @@ class JobListPage(BaseModel):
     limit: int
     search: str | None = None
 
-
-# ── Candidate / Leaderboard ───────────────────────────────────────────────────
 
 
 class CategoryScoreOut(BaseModel):
@@ -202,8 +195,6 @@ class InterviewInviteOut(BaseModel):
     email: str
 
 
-# ── LLM structured output models (passed to output_format=) ──────────────────
-
 
 class RequirementItem(BaseModel):
     """A single extracted job requirement."""
@@ -293,7 +284,6 @@ class PromptEvaluationResult(BaseModel):
 class EvaluationResult(BaseModel):
     """Claude returns this when evaluating a candidate against a job."""
 
-    # Claude also extracts the candidate's name if not already known
     candidate_name: str = Field(..., description="Candidate's full name as found in the CV")
     category_scores: CategoryScoreSet = Field(
         ...,

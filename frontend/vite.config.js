@@ -7,14 +7,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      // @/ maps to src/ — used throughout the codebase
       "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
     port: 5173,
     proxy: {
-      // Proxy /api calls to the FastAPI backend during development
       "/api": {
         target: "http://localhost:8000",
         changeOrigin: true,

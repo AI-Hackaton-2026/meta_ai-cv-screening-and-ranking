@@ -1,13 +1,8 @@
 import { useBatchStatus } from "@/lib/queries";
 
-/**
- * Live batch progress bar — polls while any candidates are pending/processing.
- * Stops polling once all are done or errored.
- */
 export function BatchProgress({ jobId }) {
   const { data } = useBatchStatus(jobId, {
     refetchInterval: (query) => {
-      // TanStack Query v5: query.state.data
       const d = query?.state?.data;
       if (!d || d.total === 0) return false;
       const active = d.pending + d.processing;

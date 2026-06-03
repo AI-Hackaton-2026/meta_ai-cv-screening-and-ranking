@@ -92,7 +92,6 @@ def generate_candidate_pdf(candidate: object) -> bytes:
 
     styles = getSampleStyleSheet()
 
-    # Symphony violet
     VIOLET = colors.HexColor("#726BFF")
     INK = colors.HexColor("#282C34")
 
@@ -134,18 +133,15 @@ def generate_candidate_pdf(candidate: object) -> bytes:
 
     story: list[Flowable] = []
 
-    # Header
     story.append(Paragraph("MetaHire — Candidate Evaluation Report", title_style))
     gen_time = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     story.append(Paragraph(f"Generated: {gen_time} &nbsp;|&nbsp; Model: {ev.model}", meta_style))
     story.append(HRFlowable(width="100%", color=VIOLET, thickness=1, spaceAfter=8))
 
-    # Candidate summary
     story.append(Paragraph(f"Candidate: <b>{candidate.name}</b>", heading2_style))  # type: ignore[attr-defined]
     story.append(Paragraph(f"File: {candidate.original_filename}", meta_style))  # type: ignore[attr-defined]
     story.append(Spacer(1, 6))
 
-    # Overall score + recommendation
     rec_table = Table(
         [
             [
@@ -170,7 +166,6 @@ def generate_candidate_pdf(candidate: object) -> bytes:
     story.append(rec_table)
     story.append(Spacer(1, 8))
 
-    # Category scores table
     story.append(Paragraph("Category Scores", heading2_style))
     cs = ev.category_scores or {}
     cat_data: list[list[object]] = [["Category", "Score", "Rationale"]]
@@ -205,11 +200,9 @@ def generate_candidate_pdf(candidate: object) -> bytes:
     )
     story.append(score_table)
 
-    # Summary
     story.append(Paragraph("Recruiter Summary", heading2_style))
     story.append(Paragraph(ev.summary, body_style))
 
-    # Strengths + Gaps side by side
     story.append(Paragraph("Strengths & Gaps", heading2_style))
     strengths_text = "<br/>".join(f"• {s}" for s in (ev.strengths or []))
     gaps_text = "<br/>".join(f"• {g}" for g in (ev.gaps or []))
@@ -238,11 +231,9 @@ def generate_candidate_pdf(candidate: object) -> bytes:
     )
     story.append(sg_table)
 
-    # Full reasoning
     story.append(Paragraph("Full Reasoning", heading2_style))
     story.append(Paragraph(ev.reasoning, body_style))
 
-    # Footer
     story.append(Spacer(1, 12))
     story.append(HRFlowable(width="100%", color=colors.HexColor("#D9D9D9"), thickness=0.5))
     story.append(

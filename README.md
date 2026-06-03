@@ -22,12 +22,12 @@ MetaHire helps recruiters prioritize candidates faster. Create a job from a desc
 
 ### Prerequisites
 
-| Tool | Version |
-|---|---|
-| Python | 3.12 |
-| [uv](https://docs.astral.sh/uv/) | latest |
-| Node.js | 22+ |
-| Anthropic API key | [console.anthropic.com](https://console.anthropic.com) |
+| Tool                             | Version                                                |
+| -------------------------------- | ------------------------------------------------------ |
+| Python                           | 3.12                                                   |
+| [uv](https://docs.astral.sh/uv/) | latest                                                 |
+| Node.js                          | 22+                                                    |
+| Anthropic API key                | [console.anthropic.com](https://console.anthropic.com) |
 
 ### Backend
 
@@ -50,34 +50,20 @@ npm run dev
 
 App: **http://localhost:5173** (Vite proxies `/api` → backend)
 
-### Demo preparation (before presenting)
-
-Prepare data **before** the live demo — there is no in-app “load sample data” button.
-
-```bash
-# Optional: regenerate sample CV PDFs if samples/cvs/ is empty
-cd backend && uv run python ../samples/create_sample_cvs.py
-
-# Load sample jobs + CVs and run AI extraction/scoring (uses Anthropic API)
-cd backend && uv run python -m app.seed
-```
-
-Then start backend and frontend and walk through an existing job, or create a fresh job and upload CVs from `samples/cvs/`.
-
 ---
 
 ## Environment variables
 
 Copy `backend/.env.example` → `backend/.env`.
 
-| Variable | Required | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | Claude API key |
-| `CLAUDE_MODEL` | No | Default `claude-sonnet-4-5` |
-| `MAX_CONCURRENCY` | No | Parallel scoring tasks (default `5`) |
-| `CORS_ORIGINS` | No | Frontend origin(s), comma-separated |
-| `DATABASE_URL` | No | Default SQLite under `backend/data/` |
-| `SUPABASE_*` | No | Optional private storage for original CV files |
+| Variable            | Required | Description                                    |
+| ------------------- | -------- | ---------------------------------------------- |
+| `ANTHROPIC_API_KEY` | Yes      | Claude API key                                 |
+| `CLAUDE_MODEL`      | No       | Default `claude-sonnet-4-5`                    |
+| `MAX_CONCURRENCY`   | No       | Parallel scoring tasks (default `5`)           |
+| `CORS_ORIGINS`      | No       | Frontend origin(s), comma-separated            |
+| `DATABASE_URL`      | No       | Default SQLite under `backend/data/`           |
+| `SUPABASE_*`        | No       | Optional private storage for original CV files |
 
 See [docs/setup.md](docs/setup.md) for Supabase setup and troubleshooting.
 
@@ -108,9 +94,9 @@ cd frontend && npm run lint && npm run build
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| AI | Anthropic Claude (structured outputs) |
-| Backend | FastAPI · Python 3.12 · uv · SQLite (async) |
+| Layer    | Technology                                       |
+| -------- | ------------------------------------------------ |
+| AI       | Anthropic Claude (structured outputs)            |
+| Backend  | FastAPI · Python 3.12 · uv · SQLite (async)      |
 | Frontend | React 19 · Vite 6 · TanStack Query · Tailwind v4 |
-| CI | GitHub Actions (ruff, pyright, eslint, build) |
+| CI       | GitHub Actions (ruff, pyright, eslint, build)    |

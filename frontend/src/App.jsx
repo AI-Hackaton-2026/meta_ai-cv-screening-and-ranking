@@ -11,7 +11,6 @@ export default function App() {
         <Route path="/" element={<JobsPage />} />
         <Route path="/jobs/:id" element={<JobDetailPage />} />
         <Route path="/candidates/:id" element={<CandidatePage />} />
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

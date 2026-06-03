@@ -13,8 +13,6 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// ── Jobs ─────────────────────────────────────────────────────────────────────
-
 export const jobsApi = {
   list: (params = {}) => apiClient.get("/jobs", { params }).then((r) => r.data),
   get: (id) => apiClient.get(`/jobs/${id}`).then((r) => r.data),
@@ -41,8 +39,6 @@ export const jobsApi = {
 
   exportCsv: (jobId) => `${BASE_URL}/jobs/${jobId}/export?format=csv`,
 };
-
-// ── Candidates ───────────────────────────────────────────────────────────────
 
 export const candidatesApi = {
   get: (id) => apiClient.get(`/candidates/${id}`).then((r) => r.data),

@@ -82,7 +82,6 @@ export function UploadZone({
         </div>
       </div>
 
-      {/* File list */}
       {files.length > 0 && (
         <div className="flex flex-col gap-1">
           <div className="mh-filelist-scroll">

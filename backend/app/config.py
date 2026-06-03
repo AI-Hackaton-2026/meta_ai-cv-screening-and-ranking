@@ -8,27 +8,14 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # Required
     anthropic_api_key: str
-
-    # Claude model — change here or via env to experiment with different models
     claude_model: str = "claude-sonnet-4-5"
-
-    # Concurrency cap for background CV scoring tasks
     max_concurrency: int = 5
-
-    # Database — aiosqlite path
     database_url: str = "sqlite+aiosqlite:///./data/metahire.db"
-
-    # CORS — comma-separated list of allowed origins
     cors_origins: str = "http://localhost:5173"
-
-    # Supabase Storage — optional locally; required to persist original CV files remotely
     supabase_url: str | None = None
     supabase_service_role_key: str | None = None
     supabase_storage_bucket: str = "cvs"
-
-    # Mailjet transactional email — optional until interview invitations are sent
     mailjet_api_key: str | None = None
     mailjet_secret_key: str | None = None
     email_from: str | None = None
@@ -44,5 +31,4 @@ class Settings(BaseSettings):
         return bool(self.supabase_url and self.supabase_service_role_key)
 
 
-# Single shared instance imported everywhere
 settings = Settings()  # type: ignore[call-arg]

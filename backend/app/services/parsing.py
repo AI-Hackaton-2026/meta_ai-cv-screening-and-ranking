@@ -15,7 +15,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Size limit: 10 MB per uploaded file
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 ALLOWED_MIME_TYPES = {
@@ -74,7 +73,6 @@ def parse_docx(content: bytes) -> str:
         if para.text.strip():
             parts.append(para.text.strip())
 
-    # Also extract text from tables
     for table in doc.tables:
         for row in table.rows:
             row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())

@@ -1,12 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-/**
- * Renders markdown text with MetaHire styling.
- *
- * The source text is rendered verbatim (1:1) — only presentation changes:
- * **bold** becomes bold, headings/lists/spacing get proper layout.
- */
 const COMPONENTS = {
   h1: ({ node, ...props }) => (
     <h2 className="mt-4 first:mt-0 mb-2 text-[17px] font-semibold text-(--foreground)" {...props} />
