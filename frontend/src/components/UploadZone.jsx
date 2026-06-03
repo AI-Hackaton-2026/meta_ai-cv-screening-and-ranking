@@ -1,15 +1,17 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, FileText, AlertCircle } from "lucide-react";
+import { UploadCloud, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
 import { useUploadCandidates } from "@/lib/queries";
 
 const ACCEPTED = { "application/pdf": [".pdf"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] };
 
-export function UploadZone({ jobId, onUploaded }) {
+export function UploadZone({ jobId, onUploaded, compact = false }) {
   const [files, setFiles] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
   const { mutateAsync: upload, isPending } = useUploadCandidates(jobId);
 
   const onDrop = useCallback((accepted) => {
@@ -42,12 +44,13 @@ export function UploadZone({ jobId, onUploaded }) {
       }
       setFiles([]);
       onUploaded?.();
+      if (compact) setModalOpen(false);
     } catch (error) {
       toast.error(error.response?.data?.detail ?? "Upload failed. Check backend connection.");
     }
   };
 
-  return (
+  const uploadContent = (
     <div className="flex flex-col gap-3">
       {/* Drop target */}
       <div
@@ -105,4 +108,28 @@ export function UploadZone({ jobId, onUploaded }) {
       )}
     </div>
   );
+
+  if (compact) {
+    return (
+      <>
+        <div className="mh-compact-upload">
+          <Button type="button" size="sm" onClick={() => setModalOpen(true)}>
+            <UploadCloud size={14} />
+            Upload CVs
+          </Button>
+        </div>
+        <Dialog
+          open={modalOpen}
+          onClose={() => !isPending && setModalOpen(false)}
+          title="Upload CVs"
+          size="md"
+          bodyClassName="mh-upload-dialog-body"
+        >
+          {uploadContent}
+        </Dialog>
+      </>
+    );
+  }
+
+  return uploadContent;
 }

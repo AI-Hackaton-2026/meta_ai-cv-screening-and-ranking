@@ -53,7 +53,9 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .card:hover {
@@ -138,6 +140,7 @@ body {
 
 .mh-main-wide {
   max-width: none;
+  padding: 18px 28px 24px;
 }
 
 .mh-topnav {
@@ -175,7 +178,8 @@ body {
   font-weight: 600;
   color: var(--muted-foreground);
   box-shadow: 0 0 0 rgba(107, 105, 255, 0);
-  transition: transform var(--dur-fast) var(--ease-out),
+  transition:
+    transform var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out),
     background var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
@@ -241,7 +245,8 @@ body {
   cursor: pointer;
   border: 1px solid transparent;
   white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease-out),
+  transition:
+    background var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
@@ -445,7 +450,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 9px 13px 9px 38px;
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
 }
 
 .mh-search input::placeholder {
@@ -618,7 +625,8 @@ body {
   border: 1px solid var(--input);
   border-radius: var(--radius-md);
   padding: 10px 13px;
-  transition: border-color var(--dur-fast) var(--ease-out),
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
@@ -761,7 +769,8 @@ body {
   color: var(--muted-foreground);
   font-size: 13px;
   font-weight: 600;
-  transition: border-color var(--dur-fast) var(--ease-out),
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
     background var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
@@ -888,6 +897,23 @@ body {
   gap: 7px;
 }
 
+.mh-requirement-chips {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.mh-req-chip {
+  width: calc(100% - 4px);
+  justify-content: flex-start;
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+}
+
 .mh-job-hero {
   display: flex;
   align-items: flex-start;
@@ -941,7 +967,8 @@ body {
   line-height: 1.7;
   color: var(--secondary-foreground);
   white-space: pre-wrap;
-  transition: max-height var(--dur-med) var(--ease-out),
+  transition:
+    max-height var(--dur-med) var(--ease-out),
     opacity var(--dur-med) var(--ease-out);
 }
 
@@ -991,6 +1018,20 @@ body {
   align-items: start;
 }
 
+.mh-job-sidebar {
+  margin-top: 0;
+}
+
+.mh-sidebar-upload-row {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+.mh-sidebar-upload-row .mh-compact-upload {
+  width: 100%;
+}
+
 .mh-sec-button {
   border: 0;
   background: transparent;
@@ -1005,11 +1046,28 @@ body {
   color: var(--primary);
 }
 
+.mh-static-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 14px;
+}
+
+.mh-requirements-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 255px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
 .mh-collapse {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows var(--dur-med) var(--ease-out),
+  transition:
+    grid-template-rows var(--dur-med) var(--ease-out),
     opacity var(--dur-med) var(--ease-out);
 }
 
@@ -1030,6 +1088,7 @@ body {
 .mh-req-group {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .mh-reqgroup-label {
@@ -1039,26 +1098,20 @@ body {
   margin: 0 0 8px;
 }
 
-.mh-ai-note {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--subtle-foreground);
-}
-
-.mh-ai-note svg {
-  color: var(--primary);
-}
-
 .mh-leaderboard-panel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: min(760px, calc(100vh - 190px));
 }
 
 .mh-job-detail-page {
   width: 100%;
+}
+
+.mh-job-detail-page .mh-job-hero {
+  margin-bottom: 16px;
 }
 
 .mh-tabletop {
@@ -1066,11 +1119,127 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
+.mh-tabletop-primary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 620px;
+  min-width: 0;
+}
+
 .mh-candidate-search {
-  width: min(100%, 320px);
+  flex: 1 1 380px;
+  max-width: 460px;
+  min-width: 280px;
+}
+
+.mh-tabletop > .mh-row {
+  flex-shrink: 0;
+}
+
+.mh-compact-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mh-compact-upload-input {
+  display: none;
+}
+
+.mh-upload-count {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.mh-upload-confirm {
+  width: 86px;
+  min-width: 86px;
+  padding-inline: 10px;
+}
+
+.mh-upload-dialog-body {
+  padding: 14px;
+}
+
+.mh-upload-dialog-body .mh-drop {
+  min-height: 190px;
+  padding: 36px 18px;
+}
+
+.mh-compact-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.mh-compact-clear:hover {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.mh-batch-progress {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 320px;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-batch-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+}
+
+.mh-batch-progress-head span {
+  white-space: nowrap;
+}
+
+.mh-batch-track {
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--canvas);
+}
+
+.mh-batch-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 500ms var(--ease-out);
 }
 
 .mh-table-empty {
@@ -1085,6 +1254,7 @@ body {
   background: var(--card);
   color: var(--muted-foreground);
   text-align: center;
+  flex: 1;
 }
 
 .mh-table-empty p {
@@ -1100,7 +1270,9 @@ body {
 
 .mh-leaderboard-table-wrap {
   border-radius: var(--radius-lg);
-  overflow-x: auto;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .mh-leaderboard-table {
@@ -1110,6 +1282,9 @@ body {
 
 .mh-leaderboard-table th {
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .mh-leaderboard-table td {
@@ -1379,7 +1554,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
 }
 
 .mh-catrow + .mh-catrow {
@@ -1444,7 +1621,8 @@ body {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows var(--dur-med) var(--ease-out),
+  transition:
+    grid-template-rows var(--dur-med) var(--ease-out),
     opacity var(--dur-med) var(--ease-out);
 }
 
@@ -1484,7 +1662,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card);
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
 }
 
 .mh-reqcard + .mh-reqcard {
@@ -1596,6 +1776,10 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .mh-leaderboard-panel {
+    height: auto;
+  }
+
   .mh-cand-grid,
   .mh-sg-grid {
     grid-template-columns: 1fr;
@@ -1625,6 +1809,24 @@ body {
   }
 
   .mh-jobs-search {
+    width: 100%;
+  }
+
+  .mh-tabletop-primary,
+  .mh-compact-upload {
+    width: 100%;
+  }
+
+  .mh-tabletop-primary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mh-compact-upload {
+    flex-wrap: wrap;
+  }
+
+  .mh-batch-progress {
     width: 100%;
   }
 
@@ -1710,7 +1912,8 @@ body {
   color: #fff;
   padding: 0;
   flex-shrink: 0;
-  transition: background var(--dur-fast) var(--ease-out),
+  transition:
+    background var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-spring);
 }
@@ -1823,7 +2026,7 @@ body {
 }
 
 .mh-leaderboard-table-wrap {
-  overflow-x: auto;
+  overflow: auto;
 }
 
 .mh-leaderboard-table {
@@ -1833,6 +2036,9 @@ body {
 
 .mh-leaderboard-table th {
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .mh-leaderboard-table td {
@@ -1927,7 +2133,9 @@ body {
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  transition: border-color 0.12s, transform 0.1s;
+  transition:
+    border-color 0.12s,
+    transform 0.1s;
 }
 
 .mh-importance-dot:hover {
@@ -1956,10 +2164,7 @@ body {
 /* ── Compare modal (separated sections, shared column grid) ─────────────── */
 
 .mh-compare-dialog {
-  max-width: min(
-    calc(172px + var(--mh-compare-cols, 2) * 340px),
-    98vw
-  ) !important;
+  max-width: min(calc(172px + var(--mh-compare-cols, 2) * 340px), 98vw) !important;
   max-height: 92vh !important;
 }
 
@@ -1988,7 +2193,10 @@ body {
 /* Narrow label column; candidate columns share remaining width */
 .mh-compare-row {
   display: grid;
-  grid-template-columns: var(--mh-compare-label-col) repeat(var(--mh-compare-cols, 2), minmax(0, 1fr));
+  grid-template-columns: var(--mh-compare-label-col) repeat(
+      var(--mh-compare-cols, 2),
+      minmax(0, 1fr)
+    );
   width: 100%;
   align-items: stretch;
 }

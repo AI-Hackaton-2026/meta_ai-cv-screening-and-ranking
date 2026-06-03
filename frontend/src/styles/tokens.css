@@ -105,10 +105,10 @@
   --hold-text: var(--color-hold-text);
   --reject-bg: var(--color-reject-bg);
   --reject-text: var(--color-reject-text);
-  --chart-1: var(--color-primary);
-  --chart-2: #8577ff;
-  --chart-3: #a392ff;
-  --chart-4: #5045e0;
+  --chart-1: #4c1d95;
+  --chart-2: var(--color-primary);
+  --chart-3: #8b5cf6;
+  --chart-4: #c084fc;
   --chart-5: #cec5ff;
   --gradient-cta: linear-gradient(135deg, #6b69ff, #a392ff);
   --font-mono: "SFMono-Regular", "JetBrains Mono", ui-monospace, Menlo, monospace;
