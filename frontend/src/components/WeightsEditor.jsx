@@ -4,11 +4,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useUpdateJob } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import {
-  completeWeights,
-  importancesToWeights,
-  percentagesToImportances,
-} from "@/lib/weights";
+import { completeWeights, importancesToWeights, percentagesToImportances } from "@/lib/weights";
 
 const CATEGORIES = [
   { key: "skills", label: "Skills", color: "var(--chart-1)" },
@@ -50,10 +46,7 @@ export function WeightsEditor({ jobId, currentWeights }) {
     <div className="mh-weights-editor">
       <div className="mh-weightbar">
         {CATEGORIES.map(({ key, color }) => (
-          <div
-            key={key}
-            style={{ width: `${computedWeights[key] ?? 0}%`, background: color }}
-          />
+          <div key={key} style={{ width: `${computedWeights[key] ?? 0}%`, background: color }} />
         ))}
       </div>
 

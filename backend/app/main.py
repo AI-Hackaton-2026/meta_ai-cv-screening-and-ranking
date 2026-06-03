@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure the data directory exists (aiosqlite requires the parent dir)
     db_path = settings.database_url.replace("sqlite+aiosqlite:///", "")
     os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
 
